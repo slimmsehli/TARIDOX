@@ -1,0 +1,187 @@
+Prototype Setup and Run Instructions
+
+This prototype consists of three main parts:
+
+    React Frontend: Your web application.
+
+    Flask Backend: The API server and MQTT handler.
+
+    Python Locker Client Simulator: Simulates your Raspberry Pi.
+
+Step 1: Set up your environment
+
+    Install Node.js & npm/yarn: If you don't have them, download from nodejs.org.
+
+    Install Python 3 & pip: If you don't have them, download from python.org.
+
+    Create project directories:
+
+    mkdir smart_locker_prototype
+    cd smart_locker_prototype
+    mkdir frontend
+    mkdir backend
+    mkdir client_sim
+
+    Save the code:
+
+        Save the content of the React Frontend (App.js) immersive as smart_locker_prototype/frontend/src/App.js.
+
+        Save the content of the Flask Backend (app.py) immersive as smart_locker_prototype/backend/app.py.
+
+        Save the content of the Python Locker Client Simulator (client_sim.py) immersive as smart_locker_prototype/client_sim/client_sim.py.
+
+Step 2: Set up the MQTT Broker (Crucial!)
+
+You need an MQTT broker for the backend and clients to communicate.
+
+Option A (Recommended for simplicity): Use a Public Test Broker
+
+    The provided code is configured to use broker.hivemq.com on port 1883, which is a public test MQTT broker. You don't need to do anything extra for this option. Just ensure your network allows outgoing connections to this host/port.
+
+Option B (For local testing or more control): Install Mosquitto
+
+    Windows: Download the installer from mosquitto.org/download/.
+
+    macOS (using Homebrew): brew install mosquitto then brew services start mosquitto
+
+    Linux (Debian/Ubuntu): sudo apt update && sudo apt install mosquitto mosquitto-clients then sudo systemctl enable mosquitto && sudo systemctl start mosquitto
+
+    If you install Mosquitto locally, you might want to change MQTT_BROKER_HOST in backend/app.py and client_sim/client_sim.py to localhost or 127.0.0.1.
+
+Step 3: Set up and Run the Flask Backend
+
+    Navigate to the backend directory:
+
+    cd smart_locker_prototype/backend
+
+    Create a virtual environment (recommended):
+
+    python -m venv venv
+
+    Activate the virtual environment:
+
+        Windows: .\venv\Scripts\activate
+
+        macOS/Linux: source venv/bin/activate
+
+    Install dependencies:
+
+    pip install Flask Flask-Cors paho-mqtt firebase-admin
+
+    Firebase Service Account Key (for local testing without Canvas):
+
+        If you're running this outside of the Canvas environment and want the Flask backend to interact with your own Firebase project, you'll need a service account key.
+
+        Go to your Firebase Project Settings -> Service Accounts.
+
+        Click "Generate new private key" and download the JSON file.
+
+        Place this JSON file (e.g., serviceAccountKey.json) in your backend directory.
+
+        Uncomment and modify this line in backend/app.py to point to your key:
+        cred_path = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY_PATH', 'path/to/your/serviceAccountKey.json')
+        Change path/to/your/serviceAccountKey.json to the actual filename, e.g., 'serviceAccountKey.json'.
+
+        Note: If running in Canvas, the __firebase_config and Firebase Admin SDK credentials are often handled automatically by the environment, so you might not need to do this.
+
+    Run the Flask app:
+
+    python app.py
+
+    You should see output indicating Flask is running on http://localhost:5000 and the MQTT client is connecting. Keep this terminal window open.
+
+Step 4: Set up and Run the React Frontend
+
+    Navigate to the frontend directory:
+
+    cd smart_locker_prototype/frontend
+
+    Initialize a React project (if not already done):
+    This step creates the basic React project structure. You'll move App.js into it.
+
+    npx create-react-app . --template cra-template
+
+        After creation, delete src/App.js, src/App.css, src/index.css, src/logo.svg, src/reportWebVitals.js, src/setupTests.js from the newly created src folder.
+
+        Move the App.js file you saved earlier into the src folder (smart_locker_prototype/frontend/src/).
+
+        Open public/index.html and add the Tailwind CSS CDN link and Inter font link inside the <head> tag, before the closing </head> tag:
+
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+        Open src/index.js and remove the line import './index.css';.
+
+    Install dependencies:
+
+    npm install firebase
+    # or yarn add firebase
+
+    Run the React app:
+
+    npm start
+    # or yarn start
+
+    This will open the React app in your browser, usually at http://localhost:3000.
+
+Step 5: Run the Python Locker Client Simulator(s)
+
+    Navigate to the client_sim directory:
+
+    cd smart_locker_prototype/client_sim
+
+    Create a virtual environment (recommended):
+
+    python -m venv venv
+
+    Activate the virtual environment:
+
+        Windows: .\venv\Scripts\activate
+
+        macOS/Linux: source venv/bin/activate
+
+    Install dependencies:
+
+    pip install paho-mqtt
+
+    Crucial: Configure LOCKER_ID
+
+        Open client_sim.py in a text editor.
+
+        Change the LOCKER_ID variable at the top of the file to match one of the locker_ids you've added (or plan to add) via the React frontend. For example, if you added a locker with ID LKR-123456, set LOCKER_ID = "LKR-123456".
+
+        Note: You can run multiple client simulators simultaneously. For each additional simulator, open a new terminal, navigate to the client_sim directory, activate its virtual environment, and edit client_sim.py to a new unique LOCKER_ID (e.g., LKR-TEST-2, LKR-TEST-3) that also corresponds to a locker created in the frontend.
+
+    Run the client simulator:
+
+    python client_sim.py
+
+    You should see output indicating the client is connecting to MQTT and sending status updates.
+
+Interaction Flow:
+
+    Start all three components.
+
+        Flask backend (Terminal 1)
+
+        React frontend (Terminal 2)
+
+        Python client simulator(s) (Terminal 3, 4, etc.)
+
+    Open your browser to http://localhost:3000.
+
+    Add a New Locker using the "Add New Locker" button in the React UI. Make sure the ID you assign here is unique (the prototype generates one like LKR-XXXXXX).
+
+    Edit client_sim.py to set LOCKER_ID to the ID of the new locker you just created in the UI (e.g., LKR-123456). Save and restart that client_sim.py script.
+
+    Observe:
+
+        The Flask backend terminal will show MQTT messages being received.
+
+        The React UI will update the status of your lockers (e.g., "Active", "Temperature").
+
+        Click "View Details" on a locker. This will trigger a request from React to Flask, Flask to the client simulator via MQTT, and then data back. You should see the simulated box data appearing.
+
+        Click "Unlock" for a box. The Flask backend will send an MQTT command, and the client simulator will simulate the unlock and update its status.
+
+This prototype demonstrates the end-to-end communication and data flow for your smart locker system. You can expand upon it to integrate actual hardware (GPIO control) on the Raspberry Pi and more sophisticated features.
