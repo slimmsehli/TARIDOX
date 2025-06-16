@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "mqtt": "^5.13.1",
+    "sqlite3": "^5.1.7"
+  }
+}
