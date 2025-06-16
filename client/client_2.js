@@ -3,8 +3,10 @@ const mqtt = require('mqtt');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const lockerId = 'locker1';
+//const lockerId = 'locker1';
+const lockerId = process.argv[2] || 'locker1'; // Default to locker1 if not provided
 const boxCount = 4;
+//const locker_db_name = `${lockerId}.db`;
 const locker_db_name = `${lockerId}.db`;
 const client = mqtt.connect('mqtt://broker.hivemq.com');
 

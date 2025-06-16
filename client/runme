@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# List of locker IDs you want to run
+lockers=("locker1" "locker2" "locker3" "locker4" "locker5" "locker6")
+
+# Run each client in the background
+for locker in "${lockers[@]}"
+do
+  echo "Starting client for $locker"
+  node client_2.js "$locker" &
+done
+
+# Optional: wait to keep the script running if needed
+wait

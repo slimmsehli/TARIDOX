@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta http-equiv="refresh" content="5">
   <title>Taridox Locker Dashboard</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; }
+    body { background: #141414; font-family: Arial; padding: 20px; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
     th { background: #f0f0f0; }
@@ -15,19 +16,33 @@
 <body>
   <h1>Taridox Locker Dashboard</h1>
   <table>
-    <thead>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Coordinates</th>
+      <th>Working Hours</th>
+      <th>Status</th>
+      <th>Total Boxes</th>
+      <th>Empty Boxes</th>
+      <th>Last Update</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% Object.values(lockers).forEach(locker => { %>
       <tr>
-        <th>Locker ID</th>
-        <td><a href="/locker.html?lockerId=${locker.lockerId}">${locker.lockerId}</a></td>
-        <th>Empty Boxes</th>
-        <th>Total Boxes</th>
-        <th>Is Full</th>
-        <th>Last Update</th>
+        <td><a href="/locker/<%= locker.lockerId %>"><%= locker.lockerId %></a></td>
+        <td><%= locker.coordinates || '-' %></td>
+        <td><%= locker.workingHours || '-' %></td>
+        <td style="color:<%= locker.status === 'offline' ? 'red' : 'green' %>">
+          <%= locker.status %>
+        </td>
+        <td><%= locker.totalBoxes %></td>
+        <td><%= locker.emptyBoxes %></td>
+        <td><%= locker.lastUpdate ? new Date(locker.lastUpdate).toLocaleString() : '-' %></td>
       </tr>
-    </thead>
-    <tbody id="locker-table-body">
-    </tbody>
-  </table>
+    <% }) %>
+  </tbody>
+</table>
 
   <script>
     const socket = io();

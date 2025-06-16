@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Taridox Locker Dashboard</title>
+  <meta http-equiv="refresh" content="5" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #ccc;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    .status-online {
+      color: green;
+      font-weight: bold;
+    }
+    .status-offline {
+      color: red;
+      font-weight: bold;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Taridox Lockers Dashboard</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Locker ID</th>
+        <th>Coordinates</th>
+        <th>Working Hours</th>
+        <th>Status</th>
+        <th>Total Boxes</th>
+        <th>Empty Boxes</th>
+        <th>Last Update</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% Object.values(lockers).forEach(locker => { %>
+        <tr>
+          <td><a href="/locker/<%= locker.lockerId %>"><%= locker.lockerId %></a></td>
+          <td>
+            <% if (locker.latitude && locker.longitude) { %>
+              <%= locker.latitude.toFixed(5) %>, <%= locker.longitude.toFixed(5) %>
+            <% } else { %>
+              -
+            <% } %>
+          </td>
+          <td><%= locker.workingHours || '-' %></td>
+          <td class="<%= locker.status === 'offline' ? 'status-offline' : 'status-online' %>">
+            <%= locker.status %>
+          </td>
+          <td><%= locker.totalBoxes || 0 %></td>
+          <td><%= locker.emptyBoxes || 0 %></td>
+          <td>
+            <%= locker.lastUpdate ? new Date(locker.lastUpdate).toLocaleString() : '-' %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</body>
+</html>
