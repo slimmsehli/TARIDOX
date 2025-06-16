@@ -3,12 +3,13 @@ const mqtt = require('mqtt');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const lockerId = 'locker123';
+const lockerId = 'locker1';
+const locker_db_name = "lockerId.db";
 const boxCount = 4;
 const client = mqtt.connect('mqtt://broker.hivemq.com');
 
 // Setup local SQLite DB
-const db = new sqlite3.Database(path.join(__dirname, 'locker.db'));
+const db = new sqlite3.Database(path.join(__dirname, locker_db_name));
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS locker_status (
