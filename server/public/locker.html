@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Locker Details</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #f0f0f0; }
+    .occupied { background-color: #ffdddd; }
+    .empty { background-color: #ddffdd; }
+    button { margin-top: 20px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h1>Locker Details</h1>
+  <p id="locker-name"></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Box ID</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="box-table-body"></tbody>
+  </table>
+
+  <button onclick="window.location.href='/'">← Go Back</button>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const lockerId = params.get('lockerId');
+    const lockerName = document.getElementById('locker-name');
+    const tableBody = document.getElementById('box-table-body');
+
+    fetch(`/api/lockers/${lockerId}/boxes`)
+      .then(res => {
+        if (!res.ok) throw new Error('Locker not found');
+        return res.json();
+      })
+      .then(data => {
+        lockerName.innerText = `Locker: ${data.lockerId} (Last update: ${new Date(data.lastUpdate).toLocaleString()})`;
+        data.boxes.forEach(box => {
+          const row = document.createElement('tr');
+          row.className = box.occupied ? 'occupied' : 'empty';
+          row.innerHTML = `
+            <td>${box.id}</td>
+            <td>${box.occupied ? 'Occupied' : 'Empty'}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      })
+      .catch(err => {
+        lockerName.innerText = 'Error loading locker details.';
+      });
+  </script>
+</body>
+</html>
+

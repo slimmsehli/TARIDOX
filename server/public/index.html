@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Taridox Locker Dashboard</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #f0f0f0; }
+    .full { background-color: #ffcccc; }
+    .available { background-color: #ccffcc; }
+  </style>
+</head>
+<body>
+  <h1>Taridox Locker Dashboard</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Locker ID</th>
+        <td><a href="/locker.html?lockerId=${locker.lockerId}">${locker.lockerId}</a></td>
+        <th>Empty Boxes</th>
+        <th>Total Boxes</th>
+        <th>Is Full</th>
+        <th>Last Update</th>
+      </tr>
+    </thead>
+    <tbody id="locker-table-body">
+    </tbody>
+  </table>
+
+  <script>
+    const socket = io();
+    const tableBody = document.getElementById('locker-table-body');
+
+    const lockerRows = {};
+
+    function renderLockerRow(locker) {
+      const row = lockerRows[locker.lockerId] || document.createElement('tr');
+
+      row.innerHTML = `
+				<td><a href="/locker.html?lockerId=${locker.lockerId}">${locker.lockerId}</a></td>
+				<td>${locker.emptyBoxes}</td>
+				<td>${locker.totalBoxes}</td>
+				<td class="${locker.isFull ? 'full' : 'available'}">${locker.isFull ? 'Yes' : 'No'}</td>
+				<td>${new Date(locker.lastUpdate).toLocaleString()}</td>
+			`;
+
+      lockerRows[locker.lockerId] = row;
+      if (!row.parentElement) tableBody.appendChild(row);
+    }
+
+    // Fetch current status when page loads
+    fetch('/api/lockers')
+      .then(res => res.json())
+      .then(data => {
+        Object.values(data).forEach(renderLockerRow);
+      });
+
+    // Listen for live updates
+    socket.on('lockerUpdate', renderLockerRow);
+  </script>
+</body>
+</html>
+
