@@ -2,13 +2,13 @@ Prototype Setup and Run Instructions
 
 This prototype consists of three main parts:
 
-    React Frontend: Your web application.
+    React Frontend: web application.
 
     Flask Backend: The API server and MQTT handler.
 
-    Python Locker Client Simulator: Simulates your Raspberry Pi.
+    Python Locker Client Simulator: for Raspberry Pi simulation.
 
-Step 1: Set up your environment
+Step 1: environment setup
 
     Install Node.js & npm/yarn: If you don't have them, download from nodejs.org.
 
