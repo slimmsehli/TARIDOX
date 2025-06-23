@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker Management Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-700 min-h-screen text-white p-8">
+    <div class="max-w-6xl mx-auto bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl shadow-2xl p-8">
+        <h1 class="text-4xl font-bold text-center mb-8 drop-shadow-lg">Locker Management Dashboard</h1>
+
+        <div id="loading" class="text-center text-xl hidden">Loading data...</div>
+        <div id="message" class="text-center text-lg mb-4 text-yellow-300"></div>
+
+        <div id="lockers-view">
+            <h2 class="text-3xl font-semibold mb-6 text-center drop-shadow-lg">All Lockers</h2>
+            <div class="overflow-x-auto rounded-lg shadow-xl">
+                <table class="min-w-full bg-white bg-opacity-15 rounded-lg">
+                    <thead>
+                        <tr class="bg-gray-800 bg-opacity-50 text-left text-sm font-medium uppercase tracking-wider">
+                            <th class="py-3 px-6 rounded-tl-lg">ID</th>
+                            <th class="py-3 px-6">Status</th>
+                            <th class="py-3 px-6">Fullness</th>
+                            <th class="py-3 px-6">Coordinates</th>
+                            <th class="py-3 px-6">Business</th>
+                            <th class="py-3 px-6">Availability</th>
+                            <th class="py-3 px-6 rounded-tr-lg">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lockers-table-body" class="divide-y divide-gray-600">
+                        <!-- Lockers data will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="boxes-view" class="hidden mt-10">
+            <button id="back-to-lockers-btn" class="mb-6 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md text-white font-semibold transition duration-300">
+                &larr; Back to Lockers
+            </button>
+            <h2 id="boxes-header" class="text-3xl font-semibold mb-6 text-center drop-shadow-lg">Boxes in Locker: <span id="current-locker-id"></span></h2>
+            <div class="overflow-x-auto rounded-lg shadow-xl">
+                <table class="min-w-full bg-white bg-opacity-15 rounded-lg">
+                    <thead>
+                        <tr class="bg-gray-800 bg-opacity-50 text-left text-sm font-medium uppercase tracking-wider">
+                            <th class="py-3 px-6 rounded-tl-lg">ID</th>
+                            <th class="py-3 px-6">Status</th>
+                            <th class="py-3 px-6">Dimensions</th>
+                            <th class="py-3 px-6">Available From</th>
+                            <th class="py-3 px-6">Available To</th>
+                            <th class="py-3 px-6">Customer Name</th>
+                            <th class="py-3 px-6">Code 1</th>
+                            <th class="py-3 px-6">Code 2</th>
+                            <th class="py-3 px-6 rounded-tr-lg">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="boxes-table-body" class="divide-y divide-gray-600">
+                        <!-- Boxes data will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
