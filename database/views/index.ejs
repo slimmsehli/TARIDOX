@@ -12,28 +12,63 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
             color: #334155;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1000px; /* Wider container for more data */
+            width: 100%;
+            background-color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 0.75rem;
+            padding: 2rem;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        /* Locker status colors */
+        .status-online { background-color: #d1fae5; color: #065f46; }
+        .status-maintenance { background-color: #fffbeb; color: #b45309; }
+        .status-offline { background-color: #fee2e2; color: #991b1b; }
+        /* Fullness status colors */
+        .fullness-empty { background-color: #d1fae5; color: #065f46; }
+        .fullness-full { background-color: #fee2e2; color: #991b1b; }
+        .fullness-hassomespace { background-color: #e0f2fe; color: #0369a1; } /* Blue for has some space */
+
+        .button-primary {
+            @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .button-danger {
+            @apply bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .button-info {
+            @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .button-edit {
+            @apply bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
         }
     </style>
 </head>
-<body class="p-8">
-    <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-8">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-4xl font-extrabold text-indigo-700">
-                <span class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-transparent bg-clip-text">Taridox</span> Locker Management
+<body>
+    <div class="container">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 class="text-3xl font-extrabold text-indigo-700">
+                <span class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-transparent bg-clip-text">Locker Admin Dashboard</span>
             </h1>
-            <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out transform hover:scale-105">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
-                Home
-            </a>
-        </div>
-
-
-        <div class="mb-6 text-center">
-            <a href="/add_locker" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-300 ease-in-out transform hover:scale-105">
-                <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            <a href="/add_locker" class="button-primary">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                 Add New Locker
             </a>
         </div>
+
+        <h2 class="text-2xl font-bold text-indigo-600 mb-6 border-b pb-2">All Lockers</h2>
 
         <% if (lockers && lockers.length > 0) { %>
         <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
@@ -43,43 +78,43 @@
                         <th scope="col" class="py-3 px-6 rounded-tl-lg">ID</th>
                         <th scope="col" class="py-3 px-6">Name</th>
                         <th scope="col" class="py-3 px-6">Business</th>
-                        <th scope="col" class="py-3 px-6">Lat/Lon</th>
-                        <th scope="col" class="py-3 px-6">Hours</th>
+                        <th scope="col" class="py-3 px-6">Location</th>
                         <th scope="col" class="py-3 px-6">Status</th>
                         <th scope="col" class="py-3 px-6">Fullness</th>
-                        <th scope="col" class="py-3 px-6">Total Boxes</th>
-                        <th scope="col" class="py-3 px-6">Full Boxes</th>
-                        <th scope="col" class="py-3 px-6">Empty Left</th>
+                        <th scope="col" class="py-3 px-6">Boxes (F/E/T)</th>
                         <th scope="col" class="py-3 px-6 rounded-tr-lg text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="lockers-table-body">
+                    <!-- Lockers will be rendered dynamically by JavaScript -->
+                    <!-- Initial data from server-side render, subsequent updates by JS -->
                     <% lockers.forEach(function(locker) { %>
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                         <td class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap dark:text-white"><%= locker.locker_id %></td>
-                        <td class="py-4 px-6">
-                            <a href="/locker/<%= locker.locker_id %>" class="text-blue-600 hover:underline font-semibold">
-                                <%= locker.name %>
-                            </a>
-                        </td>
+                        <td class="py-4 px-6"><%= locker.name %></td>
                         <td class="py-4 px-6"><%= locker.business_name %></td>
                         <td class="py-4 px-6"><%= locker.latitude.toFixed(4) %>, <%= locker.longitude.toFixed(4) %></td>
-                        <td class="py-4 px-6"><%= locker.opening_hours %></td>
                         <td class="py-4 px-6">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold
-                                <% if (locker.status === 'online') { %> bg-green-100 text-green-800
-                                <% } else if (locker.status === 'maintenance') { %> bg-yellow-100 text-yellow-800
-                                <% } else { %> bg-red-100 text-red-800 <% } %>">
+                            <span class="status-badge
+                                <% if (locker.status === 'online') { %> status-online
+                                <% } else if (locker.status === 'maintenance') { %> status-maintenance
+                                <% } else { %> status-offline <% } %>">
                                 <%= locker.status.charAt(0).toUpperCase() + locker.status.slice(1) %>
                             </span>
                         </td>
-                        <td class="py-4 px-6"><%= locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1) %></td>
-                        <td class="py-4 px-6"><%= locker.total_boxes %></td>
-                        <td class="py-4 px-6"><%= locker.full_boxes %></td>
-                        <td class="py-4 px-6"><%= locker.empty_boxes_left %></td>
-                        <td class="py-4 px-6 text-center">
-                            <a href="/edit_locker/<%= locker.locker_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-4">Edit</a>
-                            <form action="/delete_locker/<%= locker.locker_id %>" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this locker and all its boxes?');">
+                        <td class="py-4 px-6">
+                            <span class="status-badge
+                                <% if (locker.fullness === 'empty') { %> fullness-empty
+                                <% } else if (locker.fullness === 'full') { %> fullness-full
+                                <% } else { %> fullness-hassomespace <% } %>">
+                                <%= locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1) %>
+                            </span>
+                        </td>
+                        <td class="py-4 px-6"><%= locker.full_boxes %>/<%= locker.empty_boxes_left %>/<%= locker.total_boxes %></td>
+                        <td class="py-4 px-6 text-center whitespace-nowrap">
+                            <a href="/locker/<%= locker.locker_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-2">View Details</a>
+                            <a href="/edit_locker/<%= locker.locker_id %>" class="font-medium text-yellow-600 dark:text-yellow-500 hover:underline mr-2">Edit</a>
+                            <form action="/delete_locker/<%= locker.locker_id %>" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this locker and all its boxes and history? This cannot be undone.');">
                                 <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
                             </form>
                         </td>
@@ -89,9 +124,84 @@
             </table>
         </div>
         <% } else { %>
-        <p class="text-center text-lg text-gray-600">No lockers found. Add some new lockers!</p>
+        <p class="text-center text-lg text-gray-600" id="no-lockers-message">No lockers found. Add a new one to get started.</p>
         <% } %>
     </div>
+
+    <script>
+        const lockersTableBody = document.getElementById('lockers-table-body');
+        const noLockersMessage = document.getElementById('no-lockers-message');
+
+        // Function to fetch all locker data
+        async function fetchAllLockersData() {
+            try {
+                const response = await fetch('/api/lockers');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                renderLockersTable(data.lockers);
+            } catch (error) {
+                console.error('Error fetching all locker data:', error);
+                // Optionally display a persistent error message on the page
+                // showMessage('Failed to load locker list. Please try refreshing.', 'error');
+            }
+        }
+
+        // Function to render the locker table
+        function renderLockersTable(lockers) {
+            if (lockers && lockers.length > 0) {
+                if (lockersTableBody.parentNode) { // Check if table container exists
+                    lockersTableBody.parentNode.classList.remove('hidden');
+                }
+                if (noLockersMessage) noLockersMessage.classList.add('hidden');
+
+                lockersTableBody.innerHTML = lockers.map(locker => `
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <td class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap dark:text-white">${locker.locker_id}</td>
+                        <td class="py-4 px-6">${locker.name}</td>
+                        <td class="py-4 px-6">${locker.business_name}</td>
+                        <td class="py-4 px-6">${locker.latitude.toFixed(4)}, ${locker.longitude.toFixed(4)}</td>
+                        <td class="py-4 px-6">
+                            <span class="status-badge
+                                ${locker.status === 'online' ? 'status-online' :
+                                  locker.status === 'maintenance' ? 'status-maintenance' :
+                                  'status-offline'}">
+                                ${locker.status.charAt(0).toUpperCase() + locker.status.slice(1)}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">
+                            <span class="status-badge
+                                ${locker.fullness === 'empty' ? 'fullness-empty' :
+                                  locker.fullness === 'full' ? 'fullness-full' :
+                                  'fullness-hassomespace'}">
+                                ${locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1)}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">${locker.full_boxes}/${locker.empty_boxes_left}/${locker.total_boxes}</td>
+                        <td class="py-4 px-6 text-center whitespace-nowrap">
+                            <a href="/locker/${locker.locker_id}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-2">View Details</a>
+                            <a href="/edit_locker/${locker.locker_id}" class="font-medium text-yellow-600 dark:text-yellow-500 hover:underline mr-2">Edit</a>
+                            <form action="/delete_locker/${locker.locker_id}" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this locker and all its boxes and history? This cannot be undone.');">
+                                <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                if (lockersTableBody.parentNode) {
+                    lockersTableBody.parentNode.classList.add('hidden');
+                }
+                if (noLockersMessage) noLockersMessage.classList.remove('hidden');
+            }
+        }
+
+        // On page load, fetch initial data and then set up polling
+        window.onload = () => {
+            fetchAllLockersData(); // Initial load
+            setInterval(fetchAllLockersData, 5000); // Poll every 5 seconds for updates
+        };
+    </script>
 </body>
 </html>
 

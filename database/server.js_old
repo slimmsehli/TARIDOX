@@ -13,8 +13,6 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middleware to parse URL-encoded bodies (form data)
 app.use(bodyParser.urlencoded({ extended: true }));
-// Middleware to parse JSON bodies (for new API endpoints)
-app.use(bodyParser.json());
 // Serve static files (like CSS if you had any external ones, though Tailwind is CDN-loaded)
 app.use(express.static('public')); // Create a 'public' folder if you need static assets later
 
@@ -31,7 +29,7 @@ initializeDb().then((database) => {
     process.exit(1); // Exit if DB connection fails
 });
 
-// Helper to get current timestamp inYYYY-MM-DD HH:MM:SS format
+// Helper to get current timestamp in YYYY-MM-DD HH:MM:SS format
 function getCurrentTimestamp() {
     const now = new Date();
     const year = now.getFullYear();
@@ -98,34 +96,19 @@ function updateLockerAggregates(lockerId, db, callback) {
 }
 
 
-// Route to display all lockers (initial page load for admin)
+// Route to display all lockers
 app.get('/', (req, res) => {
     const currentDb = getDb(); // Get a new connection for this request
     currentDb.all('SELECT * FROM lockers', (err, rows) => {
         currentDb.close(); // Close the connection after query
         if (err) {
-            console.error('Error fetching lockers for index page:', err.message);
+            console.error('Error fetching lockers:', err.message);
             res.status(500).send('Error retrieving lockers');
             return;
         }
         res.render('index', { lockers: rows });
     });
 });
-
-// NEW API ROUTE: Get all lockers (for client-side polling on admin page)
-app.get('/api/lockers', (req, res) => {
-    const currentDb = getDb();
-    currentDb.all('SELECT * FROM lockers', (err, rows) => {
-        currentDb.close();
-        if (err) {
-            console.error('Error fetching all lockers API:', err.message);
-            res.status(500).json({ error: 'Error retrieving all lockers' });
-            return;
-        }
-        res.json({ lockers: rows });
-    });
-});
-
 
 // Route to display the form for adding a new locker
 app.get('/add_locker', (req, res) => {
@@ -315,7 +298,7 @@ app.post('/delete_locker/:id', (req, res) => {
     });
 });
 
-// Route: Display details and boxes for a specific locker (for admin view)
+// ROUTE: Display details and boxes for a specific locker
 app.get('/locker/:id', (req, res) => {
     const lockerId = req.params.id;
     const currentDb = getDb();
@@ -337,8 +320,7 @@ app.get('/locker/:id', (req, res) => {
     ])
     .then(([locker, boxes]) => {
         currentDb.close();
-        // Pass isClientView as false for the admin view
-        res.render('locker_details', { locker: locker, boxes: boxes, isClientView: false });
+        res.render('locker_details', { locker: locker, boxes: boxes });
     })
     .catch(err => {
         currentDb.close();
@@ -351,320 +333,7 @@ app.get('/locker/:id', (req, res) => {
     });
 });
 
-// API endpoint to get locker and box data (for client-side app)
-app.get('/api/locker/:id', (req, res) => {
-    const lockerId = req.params.id;
-    const currentDb = getDb();
-
-    Promise.all([
-        new Promise((resolve, reject) => {
-            currentDb.get('SELECT * FROM lockers WHERE locker_id = ?', [lockerId], (err, row) => {
-                if (err) reject(err);
-                else if (!row) reject(new Error('Locker not found.'));
-                else resolve(row);
-            });
-        }),
-        new Promise((resolve, reject) => {
-            currentDb.all('SELECT * FROM locker_boxes WHERE locker_id = ?', [lockerId], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        })
-    ])
-    .then(([locker, boxes]) => {
-        currentDb.close();
-        res.json({ locker: locker, boxes: boxes }); // Send JSON response
-    })
-    .catch(err => {
-        currentDb.close();
-        console.error('Error fetching API locker data:', err.message);
-        res.status(500).json({ error: 'Error retrieving locker data' });
-    });
-});
-
-// API ROUTE: Update locker status to 'online'
-app.post('/api/locker/:id/connect', (req, res) => {
-    const lockerId = req.params.id;
-    const currentDb = getDb();
-    currentDb.run('UPDATE lockers SET status = "online" WHERE locker_id = ?', [lockerId], function(err) {
-        currentDb.close();
-        if (err) {
-            console.error(`Error connecting locker ${lockerId}:`, err.message);
-            return res.status(500).json({ success: false, message: 'Failed to set locker status to online.' });
-        }
-        if (this.changes === 0) {
-            return res.status(404).json({ success: false, message: 'Locker not found.' });
-        }
-        console.log(`Locker ${lockerId} status set to ONLINE.`);
-        res.json({ success: true, message: `Locker ${lockerId} connected.` });
-    });
-});
-
-// API ROUTE: Update locker status to 'offline'
-app.post('/api/locker/:id/disconnect', (req, res) => {
-    const lockerId = req.params.id;
-    const currentDb = getDb();
-    currentDb.run('UPDATE lockers SET status = "offline" WHERE locker_id = ?', [lockerId], function(err) {
-        currentDb.close();
-        if (err) {
-            console.error(`Error disconnecting locker ${lockerId}:`, err.message);
-            return res.status(500).json({ success: false, message: 'Failed to set locker status to offline.' });
-        }
-        if (this.changes === 0) {
-            return res.status(404).json({ success: false, message: 'Locker not found.' });
-        }
-        console.log(`Locker ${lockerId} status set to OFFLINE.`);
-        res.json({ success: true, message: `Locker ${lockerId} disconnected.` });
-    });
-});
-
-
-// NEW ROUTE: Client-side locker application view - now renders locker_details.ejs
-app.get('/client_locker/:id', (req, res) => {
-    const lockerId = req.params.id;
-    // When rendering for the client view, pass isClientView as true
-    const currentDb = getDb(); // Need to fetch locker and boxes for initial render
-    Promise.all([
-        new Promise((resolve, reject) => {
-            currentDb.get('SELECT * FROM lockers WHERE locker_id = ?', [lockerId], (err, row) => {
-                if (err) reject(err);
-                else if (!row) reject(new Error('Locker not found.'));
-                else resolve(row);
-            });
-        }),
-        new Promise((resolve, reject) => {
-            currentDb.all('SELECT * FROM locker_boxes WHERE locker_id = ?', [lockerId], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        })
-    ])
-    .then(([locker, boxes]) => {
-        currentDb.close();
-        res.render('locker_details', { locker: locker, boxes: boxes, isClientView: true });
-    })
-    .catch(err => {
-        currentDb.close();
-        console.error('Error fetching locker details for client view:', err.message);
-        if (err.message === 'Locker not found.') {
-            res.status(404).send('Locker not found for client view.');
-        } else {
-            res.status(500).send('Error retrieving locker details for client view.');
-        }
-    });
-});
-
-
-// API ROUTE: Fill a box (client-initiated)
-app.post('/api/locker/:locker_id/box/:box_id/fill_parcel', (req, res) => {
-    const { locker_id, box_id } = req.params;
-    const { height, width, length, volume, parcel_name, customer_name, customer_phone, occupied_from, occupied_to, code1_open, code2_open, box_health } = req.body;
-
-    // Basic validation for required fields
-    if (!height || !width || !length || !volume || !parcel_name || !customer_name) {
-        return res.status(400).json({ success: false, message: 'Missing required parcel data (dimensions, parcel name, customer name).' });
-    }
-
-    const currentDb = getDb();
-
-    currentDb.serialize(() => {
-        currentDb.run('BEGIN TRANSACTION;', (txErr) => {
-            if (txErr) {
-                currentDb.close();
-                console.error('Error starting transaction for fill_parcel:', txErr.message);
-                return res.status(500).json({ success: false, message: 'Transaction failed to start.' });
-            }
-        });
-
-        // Update the box record
-        const updateSql = `
-            UPDATE locker_boxes
-            SET
-                status = 'full',
-                ecommerce_name = ?,
-                occupied_from = ?,
-                occupied_to = ?,
-                code1_open = ?,
-                code2_open = ?,
-                box_health = ?,
-                customer_name = ?,
-                customer_phone = ?,
-                parcel_name = ?
-            WHERE
-                box_id = ? AND locker_id = ? AND status = 'empty'
-        `; // Only allow filling if the box is empty
-
-        currentDb.run(updateSql, [
-            req.body.ecommerce_name || 'Client App', // Default if not provided
-            occupied_from || getCurrentTimestamp(), // Default to current time if not provided
-            occupied_to || null,
-            code1_open || null,
-            code2_open || null,
-            box_health || 'working', // Default to working if not provided
-            customer_name,
-            customer_phone || null,
-            parcel_name,
-            box_id, locker_id
-        ], function(err) {
-            if (err) {
-                currentDb.run('ROLLBACK;', () => {
-                    currentDb.close();
-                    console.error('Error filling box:', err.message);
-                    res.status(500).json({ success: false, message: `Failed to fill box: ${err.message}` });
-                });
-                return;
-            }
-            if (this.changes === 0) {
-                currentDb.run('ROLLBACK;', () => {
-                    currentDb.close();
-                    // This means box was not found or was not empty
-                    res.status(400).json({ success: false, message: 'Box not found or not empty. Cannot fill.' });
-                });
-                return;
-            }
-
-            // After successful box update, update parent locker aggregates
-            currentDb.run('COMMIT;', (commitErr) => {
-                if (commitErr) {
-                    currentDb.close();
-                    console.error('Commit error after fill_parcel:', commitErr.message);
-                    return res.status(500).json({ success: false, message: 'Failed to commit fill action.' });
-                }
-                const tempDb = getDb();
-                updateLockerAggregates(locker_id, tempDb, (aggErr) => {
-                    tempDb.close();
-                    if (aggErr) {
-                        console.error('Error updating locker aggregates after fill_parcel:', aggErr.message);
-                        return res.status(500).json({ success: false, message: 'Box filled, but failed to update locker aggregates.' });
-                    }
-                    console.log(`Box ${box_id} filled and locker aggregates updated.`);
-                    res.json({ success: true, message: 'Box filled successfully!' });
-                });
-            });
-        });
-    });
-});
-
-// API ROUTE: Pick up a parcel (client-initiated)
-app.post('/api/locker/:locker_id/box/:box_id/pickup_parcel', (req, res) => {
-    const { locker_id, box_id } = req.params;
-    const currentDb = getDb();
-
-    // 1. Get the current state of the box
-    currentDb.get('SELECT * FROM locker_boxes WHERE box_id = ? AND locker_id = ?', [box_id, locker_id], (err, currentBoxState) => {
-        if (err) {
-            currentDb.close();
-            console.error('Error fetching current box state for pickup_parcel:', err.message);
-            return res.status(500).json({ success: false, message: 'Failed to fetch box state for pickup.' });
-        }
-        if (!currentBoxState) {
-            currentDb.close();
-            return res.status(404).json({ success: false, message: 'Box not found.' });
-        }
-
-        // Prevent pickup if box is already empty or not in working health
-        if (currentBoxState.status === 'empty' || currentBoxState.box_health !== 'working') {
-             currentDb.close();
-             return res.status(400).json({ success: false, message: 'Box cannot be picked up if it is already empty or not in working health.' });
-        }
-
-        currentDb.serialize(() => {
-            currentDb.run('BEGIN TRANSACTION;', (txErr) => {
-                if (txErr) {
-                    currentDb.close();
-                    console.error('Error starting transaction for pickup_parcel:', txErr.message);
-                    return res.status(500).json({ success: false, message: 'Transaction failed to start.' });
-                }
-            });
-
-            // 2. Log to history (preserving the state BEFORE it becomes empty)
-            const historySql = `
-                INSERT INTO box_history (
-                    box_id, locker_id, height, width, length, volume, status,
-                    ecommerce_name, occupied_from, occupied_to, code1_open, code2_open, box_health,
-                    customer_name, customer_phone, parcel_name, history_timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            currentDb.run(historySql, [
-                currentBoxState.box_id,
-                currentBoxState.locker_id,
-                currentBoxState.height,
-                currentBoxState.width,
-                currentBoxState.length,
-                currentBoxState.volume,
-                currentBoxState.status, // Log the status BEFORE reset (e.g., 'full', 'reserved', 'in use')
-                currentBoxState.ecommerce_name,
-                currentBoxState.occupied_from,
-                currentBoxState.occupied_to,
-                currentBoxState.code1_open,
-                currentBoxState.code2_open,
-                currentBoxState.box_health,
-                currentBoxState.customer_name,
-                currentBoxState.customer_phone,
-                currentBoxState.parcel_name,
-                getCurrentTimestamp()
-            ], (historyErr) => {
-                if (historyErr) {
-                    currentDb.run('ROLLBACK;', () => {
-                        currentDb.close();
-                        console.error('Error logging pickup_parcel history:', historyErr.message);
-                        res.status(500).json({ success: false, message: `Failed to log pickup history: ${historyErr.message}` });
-                    });
-                    return;
-                }
-
-                // 3. Reset the main box record to an empty state
-                const resetSql = `
-                    UPDATE locker_boxes
-                    SET
-                        status = 'empty',
-                        ecommerce_name = NULL,
-                        occupied_from = NULL,
-                        occupied_to = NULL,
-                        code1_open = NULL,
-                        code2_open = NULL,
-                        customer_name = NULL,
-                        parcel_name = NULL,
-                        customer_phone = NULL,
-                        box_health = 'working'
-                    WHERE
-                        box_id = ? AND locker_id = ?
-                `;
-                currentDb.run(resetSql, [box_id, locker_id], (resetErr) => {
-                    if (resetErr) {
-                        currentDb.run('ROLLBACK;', () => {
-                            currentDb.close();
-                            console.error('Error resetting box after pickup_parcel:', resetErr.message);
-                            res.status(500).json({ success: false, message: `Failed to reset box status: ${resetErr.message}` });
-                        });
-                        return;
-                    }
-                    currentDb.run('COMMIT;', () => {
-                        if (commitErr) {
-                            currentDb.close();
-                            console.error('Commit error after pickup_parcel reset:', commitErr.message);
-                            return res.status(500).json({ success: false, message: 'Failed to commit pickup action.' });
-                        }
-                        const tempDb = getDb();
-                        updateLockerAggregates(locker_id, tempDb, (aggErr) => {
-                            tempDb.close();
-                            if (aggErr) {
-                                console.error('Error updating locker aggregates after pickup_parcel:', aggErr.message);
-                                return res.status(500).json({ success: false, message: 'Parcel picked up, but failed to update locker aggregates.' });
-                            }
-                            console.log(`Box ${box_id} picked up, reset, and locker aggregates updated.`);
-                            res.json({ success: true, message: 'Parcel picked up successfully!' });
-                        });
-                    });
-                });
-            });
-        });
-    });
-});
-
-
-// ROUTE (GET): Display form to edit a specific box (Admin Panel only)
+// ROUTE (GET): Display form to edit a specific box
 app.get('/locker/:locker_id/box/edit/:box_id', (req, res) => {
     const { locker_id, box_id } = req.params;
     const currentDb = getDb();
@@ -682,17 +351,19 @@ app.get('/locker/:locker_id/box/edit/:box_id', (req, res) => {
     });
 });
 
-// ROUTE (POST): Handle submission of edited box data (Admin Panel only)
-// This route remains for the traditional admin form submission.
+// ROUTE (POST): Handle submission of edited box data
 app.post('/locker/:locker_id/box/edit/:box_id', (req, res) => {
     const { locker_id, box_id } = req.params;
+    // Destructure all fields, including the new parcel_name
     const { height, width, length, volume, status, ecommerce_name, occupied_from, occupied_to, code1_open, code2_open, box_health, customer_name, customer_phone, parcel_name } = req.body;
 
+    // Basic validation
     if (!height || !width || !length || !volume || !status || !box_health) {
         return res.status(400).send('Required box fields must be filled.');
     }
 
     const currentDb = getDb();
+
     currentDb.serialize(() => {
         currentDb.run('BEGIN TRANSACTION;', (txErr) => {
             if (txErr) {
@@ -743,19 +414,21 @@ app.post('/locker/:locker_id/box/edit/:box_id', (req, res) => {
                 });
                 return;
             }
-            currentDb.run('COMMIT;', (commitErr) => {
+            // After successful box update, update parent locker aggregates
+            currentDb.run('COMMIT;', (commitErr) => { // Commit box changes first
                 if (commitErr) {
                     currentDb.close();
                     console.error('Commit error after box update:', commitErr.message);
                     return res.status(500).send('Error committing box update.');
                 }
-                const tempDb = getDb();
+                const tempDb = getDb(); // Get new connection for the aggregate update
                 updateLockerAggregates(locker_id, tempDb, (aggErr) => {
-                    tempDb.close();
+                    tempDb.close(); // Close connection after update
                     if (aggErr) {
                         console.error('Error updating locker aggregates after box edit:', aggErr.message);
+                        // This error is logged but we still redirect, as the main box update succeeded.
                     }
-                    res.redirect(`/locker/${locker_id}`);
+                    res.redirect(`/locker/${locker_id}`); // Redirect back to the locker details page
                 });
             });
         });
@@ -763,12 +436,12 @@ app.post('/locker/:locker_id/box/edit/:box_id', (req, res) => {
 });
 
 
-// ROUTE (POST): Handle 'Picked' action for a box (Admin Panel only)
-// This route remains for the traditional admin form submission.
+// NEW ROUTE (POST): Handle 'Picked' action for a box
 app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
     const { locker_id, box_id } = req.params;
     const currentDb = getDb();
 
+    // 1. Get the current state of the box
     currentDb.get('SELECT * FROM locker_boxes WHERE box_id = ? AND locker_id = ?', [box_id, locker_id], (err, currentBoxState) => {
         if (err) {
             currentDb.close();
@@ -780,6 +453,7 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
             return res.status(404).send('Box not found for pickup action.');
         }
 
+        // Prevent pickup if box is already empty or not in working health
         if (currentBoxState.status === 'empty' || currentBoxState.box_health !== 'working') {
              currentDb.close();
              return res.status(400).send('Box cannot be picked up if it is already empty or not in working health.');
@@ -789,11 +463,12 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
             currentDb.run('BEGIN TRANSACTION;', (txErr) => {
                 if (txErr) {
                     currentDb.close();
-                    console.error('Error starting transaction:', txErr.message);
+                    console.error('Error starting transaction for pickup:', txErr.message);
                     return res.status(500).send('Error processing pickup (transaction failed).');
                 }
             });
 
+            // 2. Log to history (preserving the state BEFORE it becomes empty)
             const historySql = `
                 INSERT INTO box_history (
                     box_id, locker_id, height, width, length, volume, status,
@@ -809,16 +484,16 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
                 currentBoxState.width,
                 currentBoxState.length,
                 currentBoxState.volume,
-                currentBoxState.status,
+                currentBoxState.status, // Log the status BEFORE reset (e.g., 'full', 'reserved', 'in use')
                 currentBoxState.ecommerce_name,
-                currentBoxState.occupied_from,
-                currentBoxState.occupied_to,
+                currentBoxState.occupied_from,  // Occupied from date at pickup
+                currentBoxState.occupied_to,    // Occupied to date at pickup
                 currentBoxState.code1_open,
                 currentBoxState.code2_open,
                 currentBoxState.box_health,
                 currentBoxState.customer_name,
                 currentBoxState.customer_phone,
-                currentBoxState.parcel_name,
+                currentBoxState.parcel_name,    // parcel_name at pickup
                 getCurrentTimestamp()
             ], (historyErr) => {
                 if (historyErr) {
@@ -830,6 +505,7 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
                     return;
                 }
 
+                // 3. Reset the main box record to an empty state
                 const resetSql = `
                     UPDATE locker_boxes
                     SET
@@ -855,19 +531,19 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
                         });
                         return;
                     }
-                    currentDb.run('COMMIT;', () => {
+                    currentDb.run('COMMIT;', (commitErr) => { // Commit box reset first
                         if (commitErr) {
                             currentDb.close();
                             console.error('Commit error after pickup reset:', commitErr.message);
                             return res.status(500).send('Error committing pickup reset.');
                         }
-                        const tempDb = getDb();
+                        const tempDb = getDb(); // Get new connection for the aggregate update
                         updateLockerAggregates(locker_id, tempDb, (aggErr) => {
-                            tempDb.close();
+                            tempDb.close(); // Close connection after update
                             if (aggErr) {
                                 console.error('Error updating locker aggregates after pickup:', aggErr.message);
                             }
-                            res.redirect(`/locker/${locker_id}`);
+                            res.redirect(`/locker/${locker_id}`); // Redirect back to the locker details page
                         });
                     });
                 });
@@ -929,13 +605,18 @@ app.get('/edit_locker/:id', (req, res) => {
 // ROUTE (POST): Handle submission of edited locker data
 app.post('/edit_locker/:id', (req, res) => {
     const lockerId = req.params.id;
+    // Destructure all fields from the form, including box counts
     const { name, business_name, latitude, longitude, opening_hours, status, fullness, total_boxes, full_boxes, empty_boxes_left } = req.body;
 
-    if (!name || !business_name || !latitude || !longitude || !opening_hours || !status || !fullness || total_boxes === undefined || full_boxes === undefined || empty_boxes_left === undefined) {
+    // Basic validation for locker fields
+    if (!name || !business_name || !latitude || !longitude || !status || !fullness || total_boxes === undefined || full_boxes === undefined || empty_boxes_left === undefined) {
         return res.status(400).send('All required locker fields must be filled.');
     }
 
     const newTotalBoxes = parseInt(total_boxes, 10);
+    // Note: We will recalculate full_boxes and empty_boxes_left from actual data,
+    // so we don't strictly use the form's full_boxes/empty_boxes_left for DB update here.
+    // However, they are still validated for input type.
     const formFullBoxes = parseInt(full_boxes, 10);
     const formEmptyBoxesLeft = parseInt(empty_boxes_left, 10);
 
@@ -955,6 +636,7 @@ app.post('/edit_locker/:id', (req, res) => {
             }
         });
 
+        // First, get the current number of actual boxes and their statuses for this locker
         currentDb.all('SELECT box_id, status FROM locker_boxes WHERE locker_id = ?', [lockerId], (err, existingBoxes) => {
             if (err) {
                 currentDb.run('ROLLBACK;', () => {
@@ -968,6 +650,7 @@ app.post('/edit_locker/:id', (req, res) => {
             const currentActualBoxesCount = existingBoxes.length;
             const occupiedBoxCount = existingBoxes.filter(box => box.status !== 'empty').length;
 
+            // Prevent reducing total boxes below occupied count
             if (newTotalBoxes < occupiedBoxCount) {
                 currentDb.run('ROLLBACK;', () => {
                     currentDb.close();
@@ -987,6 +670,7 @@ app.post('/edit_locker/:id', (req, res) => {
 
             const promises = [];
 
+            // Add new empty boxes if needed
             if (boxesToCreate > 0) {
                 const insertBoxSql = `
                     INSERT INTO locker_boxes (
@@ -1017,7 +701,9 @@ app.post('/edit_locker/:id', (req, res) => {
                 }
             }
 
+            // Delete boxes if needed
             if (boxesToDelete > 0) {
+                // Fetch empty boxes to prioritize deletion (order by box_id DESC to remove newer ones first)
                 currentDb.all('SELECT box_id FROM locker_boxes WHERE locker_id = ? AND status = "empty" ORDER BY box_id DESC', [lockerId], (err, emptyBoxesToDelete) => {
                     if (err) {
                         currentDb.run('ROLLBACK;', () => {
@@ -1047,6 +733,7 @@ app.post('/edit_locker/:id', (req, res) => {
                         }
                     }
 
+                    // If we couldn't delete enough empty boxes, it means occupied boxes exist beyond the new total
                     if (deletedCount < boxesToDelete) {
                          currentDb.run('ROLLBACK;', () => {
                              currentDb.close();
@@ -1055,8 +742,10 @@ app.post('/edit_locker/:id', (req, res) => {
                          return;
                     }
 
+                    // Once all deletions/additions are processed via promises, update locker aggregates
                     Promise.all(promises)
                         .then(() => {
+                            // After all box structural changes, update the locker's metadata and aggregates
                             const updateLockerMetaSql = `
                                 UPDATE lockers
                                 SET
@@ -1080,6 +769,7 @@ app.post('/edit_locker/:id', (req, res) => {
                                     });
                                     return;
                                 }
+                                // Now, update aggregates based on the *actual* state of locker_boxes
                                 updateLockerAggregates(lockerId, currentDb, (aggErr) => {
                                     if (aggErr) {
                                         currentDb.run('ROLLBACK;', () => {
@@ -1093,7 +783,7 @@ app.post('/edit_locker/:id', (req, res) => {
                                         currentDb.close();
                                         if (commitErr) console.error('Commit error after full locker structural update:', commitErr.message);
                                         console.log(`Locker with ID ${lockerId} and its boxes structurally updated and aggregates refreshed.`);
-                                        res.redirect(`/locker/${lockerId}`);
+                                        res.redirect(`/locker/${lockerId}`); // Redirect to locker details page
                                     });
                                 });
                             });
@@ -1105,8 +795,10 @@ app.post('/edit_locker/:id', (req, res) => {
                                 res.status(500).send('Error adjusting individual boxes during locker update.');
                             });
                         });
-                });
+                }); // End of currentDb.all for empty boxes
             } else {
+                 // If no boxes needed to be added or deleted (total_boxes didn't change)
+                 // Just update the locker's metadata and then its aggregates
                  const updateLockerMetaSql = `
                      UPDATE lockers
                      SET
@@ -1130,6 +822,7 @@ app.post('/edit_locker/:id', (req, res) => {
                          });
                          return;
                      }
+                     // Now, update aggregates based on the *actual* state of locker_boxes
                      updateLockerAggregates(lockerId, currentDb, (aggErr) => {
                          if (aggErr) {
                              currentDb.run('ROLLBACK;', () => {
@@ -1148,8 +841,8 @@ app.post('/edit_locker/:id', (req, res) => {
                      });
                  });
             }
-        });
-    });
+        }); // End of currentDb.all for existing boxes (start of serialize block)
+    }); // End of currentDb.serialize
 });
 
 

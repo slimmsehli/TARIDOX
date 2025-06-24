@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= locker.name %> - Box Details</title>
+    <title>Locker: <%= locker.name %> - ID <%= locker.locker_id %> </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -12,6 +12,19 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
             color: #334155;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px; /* Adjusted for better fit */
+            width: 100%;
+            background-color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 0.75rem;
+            padding: 2rem;
         }
         .status-badge {
             display: inline-block;
@@ -20,34 +33,103 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
-        .status-online { background-color: #d1fae5; color: #065f46; } /* green-100, green-800 */
-        .status-maintenance { background-color: #fffbeb; color: #b45309; } /* yellow-100, amber-800 */
-        .status-offline { background-color: #fee2e2; color: #991b1b; } /* red-100, red-800 */
-        .box-status-empty { background-color: #d1fae5; color: #065f46; } /* green-100, green-800 */
-        .box-status-full { background-color: #fee2e2; color: #991b1b; } /* red-100, red-800 */
-        .box-status-reserved { background-color: #e0f2fe; color: #0369a1; } /* blue-100, sky-800 */
-        .box-status-in-use { background-color: #f3e8ff; color: #7e22ce; } /* purple-100, purple-800 */
-        .box-status-other { background-color: #e2e8f0; color: #475569; } /* gray-200, slate-700 */
+        /* Locker status colors */
+        .status-online { background-color: #d1fae5; color: #065f46; }
+        .status-maintenance { background-color: #fffbeb; color: #b45309; }
+        .status-offline { background-color: #fee2e2; color: #991b1b; }
+        /* Box status colors */
+        .box-status-empty { background-color: #d1fae5; color: #065f46; }
+        .box-status-full { background-color: #fee2e2; color: #991b1b; }
+        .box-status-reserved { background-color: #e0f2fe; color: #0369a1; }
+        .box-status-in-use { background-color: #f3e8ff; color: #7e22ce; }
+        .box-status-other { background-color: #e2e8f0; color: #475569; }
+        /* Box health colors */
         .health-working { background-color: #d1fae5; color: #065f46; }
         .health-maintenance { background-color: #fffbeb; color: #b45309; }
         .health-other { background-color: #e2e8f0; color: #475569; }
+
+        .button-primary {
+            @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .button-secondary {
+            @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .button-success {
+            @apply bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .button-danger {
+            @apply bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105;
+        }
+        .input-field {
+            @apply shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5;
+        }
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
-<body class="p-8">
-    <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-8">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-4xl font-extrabold text-indigo-700">
-                <span class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-transparent bg-clip-text">Locker:</span> <%= locker.name %>
+<body>
+    <div class="container">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 class="text-3xl font-extrabold text-indigo-700">
+                <span class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-transparent bg-clip-text">
+                    <% if (isClientView) { %>
+                        Locker Client:
+                    <% } else { %>
+                        Locker Admin:
+                    <% } %>
+                </span>
+                 ID <span id="locker-id-display"><%= locker.locker_id %></span> - <%= locker.name %>
             </h1>
-            <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out transform hover:scale-105">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
-                Home
-            </a>
+            <% if (isClientView) { %>
+                <a href="/" class="button-secondary">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
+                    Admin Panel
+                </a>
+            <% } else { %>
+                <a href="/" class="button-secondary">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
+                    Home (Admin)
+                </a>
+            <% } %>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 text-lg text-gray-700">
+        <!-- Locker Info Section -->
+        <div id="locker-info" class="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-lg text-gray-700">
             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                <p><strong class="font-semibold text-gray-900">ID:</strong> <%= locker.locker_id %></p>
+                <p><strong class="font-semibold text-gray-900">Name:</strong> <%= locker.name %></p>
                 <p><strong class="font-semibold text-gray-900">Business:</strong> <%= locker.business_name %></p>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
@@ -63,7 +145,14 @@
                         <%= locker.status.charAt(0).toUpperCase() + locker.status.slice(1) %>
                     </span>
                 </p>
-                <p><strong class="font-semibold text-gray-900">Fullness:</strong> <%= locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1) %></p>
+                <p><strong class="font-semibold text-gray-900">Fullness:</strong>
+                    <span class="status-badge
+                        <% if (locker.fullness === 'empty') { %> box-status-empty
+                        <% } else if (locker.fullness === 'full') { %> box-status-full
+                        <% } else { %> box-status-in-use <% } %>">
+                        <%= locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1) %>
+                    </span>
+                </p>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                 <p><strong class="font-semibold text-gray-900">Total Boxes:</strong> <%= locker.total_boxes %></p>
@@ -72,10 +161,10 @@
             </div>
         </div>
 
-        <h2 class="text-3xl font-bold text-indigo-600 mb-6 border-b pb-2">Boxes in this Locker</h2>
+        <h2 class="text-2xl font-bold text-indigo-600 mb-6 border-b pb-2">Boxes</h2>
 
         <% if (boxes && boxes.length > 0) { %>
-        <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
+        <div id="boxes-table-container" class="overflow-x-auto relative shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
@@ -95,7 +184,7 @@
                         <th scope="col" class="py-3 px-6 rounded-tr-lg text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="boxes-table-body">
                     <% boxes.forEach(function(box) { %>
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                         <td class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap dark:text-white"><%= box.box_id %></td>
@@ -128,13 +217,30 @@
                         <td class="py-4 px-6"><%= box.customer_phone || 'N/A' %></td>
                         <td class="py-4 px-6"><%= box.parcel_name || 'N/A' %></td>
                         <td class="py-4 px-6 text-center whitespace-nowrap">
-                            <a href="/locker/<%= locker.locker_id %>/box/edit/<%= box.box_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-2">Edit</a>
-                            <% if (box.status !== 'empty' && box.box_health === 'working') { %>
-                            <form action="/locker/<%= locker.locker_id %>/box/pickup/<%= box.box_id %>" method="post" class="inline" onsubmit="return confirm('Are you sure this parcel has been picked up? This will clear its data and log to history.');">
-                                <button type="submit" class="font-medium text-green-600 dark:text-green-500 hover:underline mr-2">Picked</button>
-                            </form>
+                            <% if (!isClientView) { %>
+                                <a href="/locker/<%= locker.locker_id %>/box/edit/<%= box.box_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-2">Edit</a>
+                                <% if (box.status !== 'empty' && box.box_health === 'working') { %>
+                                <form action="/locker/<%= locker.locker_id %>/box/pickup/<%= box.box_id %>" method="post" class="inline" onsubmit="return confirm('Are you sure this parcel has been picked up? This will clear its data and log to history.');">
+                                    <button type="submit" class="font-medium text-green-600 dark:text-green-500 hover:underline mr-2">Picked</button>
+                                </form>
+                                <% } %>
+                                <a href="/box_history/<%= box.box_id %>" class="font-medium text-purple-600 dark:text-purple-500 hover:underline">History</a>
+                            <% } else { %>
+                                <% if (box.status === 'empty') { %>
+                                    <button class="button-primary text-xs fill-box-btn"
+                                        data-box-id="<%= box.box_id %>"
+                                        data-box-height="<%= box.height %>"
+                                        data-box-width="<%= box.width %>"
+                                        data-box-length="<%= box.length %>"
+                                        data-box-volume="<%= box.volume %>"
+                                        data-box-health="<%= box.box_health %>"
+                                    >Fill Box</button>
+                                <% } else if (box.box_health === 'working') { %>
+                                    <button class="button-danger text-xs pick-up-btn" data-box-id="<%= box.box_id %>">Pick Up</button>
+                                <% } else { %>
+                                    N/A
+                                <% } %>
                             <% } %>
-                            <a href="/box_history/<%= box.box_id %>" class="font-medium text-purple-600 dark:text-purple-500 hover:underline">History</a>
                         </td>
                     </tr>
                     <% }); %>
@@ -142,9 +248,417 @@
             </table>
         </div>
         <% } else { %>
-        <p class="text-center text-lg text-gray-600">No boxes found for this locker.</p>
+        <p class="text-center text-lg text-gray-600" id="no-boxes-message">No boxes found for this locker.</p>
         <% } %>
+
+        <!-- Dynamic Message Display -->
+        <div id="message-box" class="mt-8 p-4 rounded-lg text-center font-medium hidden"></div>
     </div>
+
+    <!-- Fill Box Modal (hidden by default) -->
+    <div id="fillBoxModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 class="text-xl font-bold mb-4">Fill Box <span id="modal-box-id"></span></h3>
+            <form id="fill-box-form" class="space-y-4">
+                <input type="hidden" id="form-locker-id">
+                <input type="hidden" id="form-box-id">
+                <!-- Hidden fields for original box properties needed for update (dimensions and health) -->
+                <input type="hidden" id="form-box-height" name="height">
+                <input type="hidden" id="form-box-width" name="width">
+                <input type="hidden" id="form-box-length" name="length">
+                <input type="hidden" id="form-box-volume" name="volume">
+                <input type="hidden" id="form-box-health" name="box_health">
+
+                <div>
+                    <label for="parcel_name">Parcel Name:</label>
+                    <input type="text" id="parcel_name" name="parcel_name" class="input-field" required>
+                </div>
+                <div>
+                    <label for="customer_name">Customer Name:</label>
+                    <input type="text" id="customer_name" name="customer_name" class="input-field" required>
+                </div>
+                <div>
+                    <label for="customer_phone">Customer Phone:</label>
+                    <input type="text" id="customer_phone" name="customer_phone" class="input-field">
+                </div>
+                <div>
+                    <label for="occupied_from">Occupied From (YYYY-MM-DD HH:MM:SS):</label>
+                    <input type="text" id="occupied_from" name="occupied_from" class="input-field">
+                </div>
+                <div>
+                    <label for="occupied_to">Occupied To (YYYY-MM-DD HH:MM:SS):</label>
+                    <input type="text" id="occupied_to" name="occupied_to" class="input-field">
+                </div>
+                <div>
+                    <label for="code1_open">Code 1 (4 digits):</label>
+                    <input type="text" id="code1_open" name="code1_open" class="input-field" maxlength="4">
+                </div>
+                <div>
+                    <label for="code2_open">Code 2 (4 digits):</label>
+                    <input type="text" id="code2_open" name="code2_open" class="input-field" maxlength="4">
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" class="button-secondary" id="cancel-fill">Cancel</button>
+                    <button type="submit" class="button-success">Fill Box</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <% if (isClientView) { %>
+    <script>
+        // Use the lockerId from the EJS context
+        const lockerId = <%= locker.locker_id %>;
+        // Determine if it's the client view from the EJS context
+        const isClientView = <%= isClientView %>; // This will always be true here
+
+        const lockerInfoDiv = document.getElementById('locker-info');
+        const boxesTableBody = document.getElementById('boxes-table-body'); // Target tbody for dynamic updates
+        const boxesTableContainer = document.getElementById('boxes-table-container');
+        const noBoxesMessage = document.getElementById('no-boxes-message');
+        const messageBox = document.getElementById('message-box');
+
+        // Modal elements
+        const fillBoxModal = document.getElementById('fillBoxModal');
+        const modalBoxIdSpan = document.getElementById('modal-box-id');
+        const fillBoxForm = document.getElementById('fill-box-form');
+        const formLockerId = document.getElementById('form-locker-id');
+        const formBoxId = document.getElementById('form-box-id');
+        // Hidden fields for original box properties needed for update
+        const formBoxHeight = document.getElementById('form-box-height');
+        const formBoxWidth = document.getElementById('form-box-width');
+        const formBoxLength = document.getElementById('form-box-length');
+        const formBoxVolume = document.getElementById('form-box-volume');
+        const formBoxHealth = document.getElementById('form-box-health');
+
+
+        const closeButton = document.querySelector('.close-button');
+        const cancelFillButton = document.getElementById('cancel-fill');
+
+        // Function to show a message
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = 'mt-8 p-4 rounded-lg text-center font-medium'; // Reset classes
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-800');
+            } else if (type === 'info') {
+                messageBox.classList.add('bg-blue-100', 'text-blue-800');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000); // Hide after 5 seconds
+        }
+
+        // Helper to get current timestamp in YYYY-MM-DD HH:MM:SS format
+        function getCurrentTimestamp() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // Function to render locker details and boxes (called by JS for dynamic updates)
+        function renderLockerData(data) {
+            const { locker, boxes } = data;
+
+            if (!locker) {
+                lockerInfoDiv.innerHTML = '<p class="text-center text-red-600">Locker not found.</p>';
+                if (boxesTableContainer) boxesTableContainer.classList.add('hidden');
+                if (noBoxesMessage) noBoxesMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Update Locker Info section dynamically (using the same structure as EJS render)
+            lockerInfoDiv.innerHTML = `
+                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                    <p><strong class="font-semibold text-gray-900">Name:</strong> ${locker.name}</p>
+                    <p><strong class="font-semibold text-gray-900">Business:</strong> ${locker.business_name}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                    <p><strong class="font-semibold text-gray-900">Location:</strong> ${locker.latitude.toFixed(4)}, ${locker.longitude.toFixed(4)}</p>
+                    <p><strong class="font-semibold text-gray-900">Hours:</strong> ${locker.opening_hours}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                    <p><strong class="font-semibold text-gray-900">Status:</strong>
+                        <span class="status-badge ${locker.status === 'online' ? 'status-online' : locker.status === 'maintenance' ? 'status-maintenance' : 'status-offline'}">
+                            ${locker.status.charAt(0).toUpperCase() + locker.status.slice(1)}
+                        </span>
+                    </p>
+                    <p><strong class="font-semibold text-gray-900">Fullness:</strong>
+                        <span class="status-badge
+                            ${locker.fullness === 'empty' ? 'box-status-empty' :
+                              locker.fullness === 'full' ? 'box-status-full' :
+                              'box-status-in-use'}">
+                            ${locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1)}
+                        </span>
+                    </p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                    <p><strong class="font-semibold text-gray-900">Total Boxes:</strong> ${locker.total_boxes}</p>
+                    <p><strong class="font-semibold text-gray-900">Full Boxes:</strong> ${locker.full_boxes}</p>
+                    <p><strong class="font-semibold text-gray-900">Empty Boxes Left:</strong> ${locker.empty_boxes_left}</p>
+                </div>
+            `;
+
+            // Render Boxes dynamically
+            if (boxes && boxes.length > 0) {
+                if (boxesTableContainer) boxesTableContainer.classList.remove('hidden');
+                if (noBoxesMessage) noBoxesMessage.classList.add('hidden');
+
+                boxesTableBody.innerHTML = boxes.map(box => `
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <td class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap dark:text-white">${box.box_id}</td>
+                        <td class="py-4 px-6">${box.height}x${box.width}x${box.length} cm</td>
+                        <td class="py-4 px-6">${box.volume} cm³</td>
+                        <td class="py-4 px-6">
+                            <span class="status-badge ${box.status === 'empty' ? 'box-status-empty' :
+                                box.status === 'full' ? 'box-status-full' :
+                                box.status === 'reserved' ? 'box-status-reserved' :
+                                box.status === 'in use' ? 'box-status-in-use' :
+                                'box-status-other'}">
+                                ${box.status.charAt(0).toUpperCase() + box.status.slice(1)}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">${box.ecommerce_name || 'N/A'}</td>
+                        <td class="py-4 px-6">${box.occupied_from || 'N/A'}</td>
+                        <td class="py-4 px-6">${box.occupied_to || 'N/A'}</td>
+                        <td class="py-4 px-6">${box.code1_open || 'N/A'}</td>
+                        <td class="py-4 px-6">${box.code2_open || 'N/A'}</td>
+                        <td class="py-4 px-6">
+                            <span class="status-badge
+                                ${box.box_health === 'working' ? 'health-working' :
+                                  box.box_health === 'maintenance' ? 'health-maintenance' :
+                                  'health-other'}">
+                                ${box.box_health.charAt(0).toUpperCase() + box.box_health.slice(1)}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">${box.customer_name || 'N/A'}</td>
+                        <td class="py-4 px-6">${box.customer_phone || 'N/A'}</td>
+                        <td class="py-4 px-6">${box.parcel_name || 'N/A'}</td>
+                        <td class="py-4 px-6 text-center whitespace-nowrap">
+                            ${box.status === 'empty' ?
+                                `<button class="button-primary text-xs fill-box-btn"
+                                    data-box-id="${box.box_id}"
+                                    data-box-height="${box.height}"
+                                    data-box-width="${box.width}"
+                                    data-box-length="${box.length}"
+                                    data-box-volume="${box.volume}"
+                                    data-box-health="${box.box_health}"
+                                >Fill Box</button>` :
+                                (box.box_health === 'working' ?
+                                `<button class="button-danger text-xs pick-up-btn" data-box-id="${box.box_id}">Pick Up</button>` : 'N/A')}
+                        </td>
+                    </tr>
+                `).join('');
+                addEventListenersToButtons(); // Attach event listeners after rendering
+            } else {
+                if (boxesTableContainer) boxesTableContainer.classList.add('hidden');
+                if (noBoxesMessage) noBoxesMessage.classList.remove('hidden');
+            }
+        }
+
+        // Function to fetch data from the server
+        async function fetchLockerData() {
+            try {
+                const response = await fetch(`/api/locker/${lockerId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                renderLockerData(data); // Call render function with fetched data
+            } catch (error) {
+                console.error('Error fetching locker data:', error);
+                // For client view, maybe a more prominent error if it can't connect at all.
+                // For polling, a silent log is often enough.
+            }
+        }
+
+        // Function to send fill box action to the new API endpoint
+        async function sendFillBoxAction(boxId, payload) {
+            try {
+                const response = await fetch(`/api/locker/${lockerId}/box/${boxId}/fill_parcel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json', // Send as JSON
+                    },
+                    body: JSON.stringify(payload) // Convert payload to JSON string
+                });
+                const result = await response.json(); // Parse JSON response
+
+                if (!response.ok) {
+                    throw new Error(result.message || `Server error! status: ${response.status}`);
+                }
+                showMessage(result.message || 'Box filled successfully!');
+            } catch (error) {
+                console.error('Error filling box:', error);
+                showMessage(`Error filling box: ${error.message}`, 'error');
+            } finally {
+                fetchLockerData(); // Always refresh data after an action
+            }
+        }
+
+        // Function to send pick up action to the new API endpoint
+        async function sendPickupAction(boxId) {
+            if (!confirm('Are you sure this parcel has been picked up? This will clear its data and log to history.')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/locker/${lockerId}/box/${boxId}/pickup_parcel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json', // Simple POST, no body needed, but good practice
+                    },
+                    body: JSON.stringify({}) // Send empty JSON body
+                });
+                const result = await response.json(); // Parse JSON response
+
+                if (!response.ok) {
+                    throw new Error(result.message || `Server error! status: ${response.status}`);
+                }
+                showMessage(result.message || 'Parcel picked up successfully! Box is now empty.');
+            } catch (error) {
+                console.error('Error picking up parcel:', error);
+                showMessage(`Error picking up parcel: ${error.message}`, 'error');
+            } finally {
+                fetchLockerData(); // Always refresh data after an action
+            }
+        }
+
+        // Function to update locker connection status on server
+        async function updateLockerConnectionStatus(status) {
+            try {
+                const response = await fetch(`/api/locker/${lockerId}/${status}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({}) // Send an empty object for POST
+                });
+                if (!response.ok) {
+                    console.error(`Failed to update locker ${lockerId} status to ${status}.`);
+                } else {
+                    const result = await response.json();
+                    console.log(`Locker ${lockerId} status: ${result.message}`);
+                }
+            } catch (error) {
+                console.error(`Error updating locker ${lockerId} status to ${status}:`, error);
+            }
+        }
+
+
+        // Add event listeners for dynamic buttons (Fill Box, Pick Up)
+        function addEventListenersToButtons() {
+            // Remove existing listeners to prevent duplicates (important for re-rendering)
+            document.querySelectorAll('.fill-box-btn').forEach(button => button.onclick = null);
+            document.querySelectorAll('.pick-up-btn').forEach(button => button.onclick = null);
+
+            // Only attach client-specific listeners if in client view
+            // (This script block is already inside <% if (isClientView) %>)
+            document.querySelectorAll('.fill-box-btn').forEach(button => {
+                button.onclick = (event) => {
+                    const boxId = event.target.dataset.boxId;
+                    // Get dimensions and health from data attributes of the button
+                    formBoxHeight.value = event.target.dataset.boxHeight;
+                    formBoxWidth.value = event.target.dataset.boxWidth;
+                    formBoxLength.value = event.target.dataset.boxLength;
+                    formBoxVolume.value = event.target.dataset.boxVolume;
+                    formBoxHealth.value = event.target.dataset.boxHealth;
+
+                    modalBoxIdSpan.textContent = boxId;
+                    formLockerId.value = lockerId;
+                    formBoxId.value = boxId;
+                    
+                    // Clear form for new input
+                    fillBoxForm.reset();
+                    // Suggest current time for occupied_from
+                    document.getElementById('occupied_from').value = getCurrentTimestamp();
+
+                    fillBoxModal.classList.remove('hidden');
+                };
+            });
+
+            document.querySelectorAll('.pick-up-btn').forEach(button => {
+                button.onclick = (event) => {
+                    sendPickupAction(event.target.dataset.boxId); // Call the new API function
+                };
+            });
+        }
+
+        // Modal close functionality
+        closeButton.onclick = () => {
+            fillBoxModal.classList.add('hidden');
+            fillBoxForm.reset(); // Clear form
+        };
+        cancelFillButton.onclick = () => {
+            fillBoxModal.classList.add('hidden');
+            fillBoxForm.reset(); // Clear form
+        };
+        window.onclick = (event) => {
+            if (event.target == fillBoxModal) {
+                fillBoxModal.classList.add('hidden');
+                fillBoxForm.reset(); // Clear form
+            }
+        };
+
+        // Handle Fill Box Form submission
+        fillBoxForm.onsubmit = async (event) => {
+            event.preventDefault();
+            const formData = new FormData(fillBoxForm);
+            const boxId = formData.get('form-box-id');
+
+            const payload = {
+                // Parse float for numeric values from hidden inputs
+                height: parseFloat(formData.get('height')),
+                width: parseFloat(formData.get('width')),
+                length: parseFloat(formData.get('length')),
+                volume: parseFloat(formData.get('volume')),
+                box_health: formData.get('box_health'), // Take health from hidden input
+                parcel_name: formData.get('parcel_name'),
+                customer_name: formData.get('customer_name'),
+                customer_phone: formData.get('customer_phone'),
+                occupied_from: formData.get('occupied_from'),
+                occupied_to: formData.get('occupied_to'),
+                code1_open: formData.get('code1_open'),
+                code2_open: formData.get('code2_open'),
+                ecommerce_name: formData.get('ecommerce_name') || 'Client App' // Default if not provided
+            };
+            
+            await sendFillBoxAction(boxId, payload); // Call the new API function
+            fillBoxModal.classList.add('hidden');
+            fillBoxForm.reset();
+        };
+
+
+        // Initial fetch and set up polling (only for client view)
+        window.onload = async () => {
+            // This entire script block is inside <% if (isClientView) %>, so no need to check isClientView here.
+            await updateLockerConnectionStatus('connect'); // Signal connection
+            // Initial render is already done by EJS, but fetch and re-render to ensure latest dynamic data
+            await fetchLockerData();
+            setInterval(fetchLockerData, 3000); // Poll every 3 seconds for updates
+        };
+
+        // Send 'disconnect' signal when the page is unloaded (only for client view)
+        // This script block is already inside <% if (isClientView) %>
+        window.addEventListener('beforeunload', async () => {
+            // Using navigator.sendBeacon for more reliable, non-blocking send on unload
+            const url = `/api/locker/${lockerId}/disconnect`;
+            const data = new FormData(); // sendBeacon requires a Blob, FormData, or URLSearchParams
+            navigator.sendBeacon(url, data);
+            console.log(`Sending disconnect signal for locker ${lockerId}`);
+        });
+
+    </script>
+    <% } %>
 </body>
 </html>
 
