@@ -1,0 +1,7 @@
+
+npm init -y
+npm install express better-sqlite3
+npm init -y
+npm install express ejs sqlite3
+
+sqlite3 ./db/taridox.db < schema.sql

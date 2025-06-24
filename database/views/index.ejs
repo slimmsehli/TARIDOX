@@ -1,0 +1,97 @@
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-extrabold text-indigo-700">
+                <span class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-transparent bg-clip-text">Taridox</span> Locker Management
+            </h1>
+            <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out transform hover:scale-105">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
+                Home
+            </a>
+        </div>
+
+
+        <div class="mb-6 text-center">
+            <a href="/add_locker" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-300 ease-in-out transform hover:scale-105">
+                <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Add New Locker
+            </a>
+        </div>
+
+        <% if (lockers && lockers.length > 0) { %>
+        <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="py-3 px-6 rounded-tl-lg">ID</th>
+                        <th scope="col" class="py-3 px-6">Name</th>
+                        <th scope="col" class="py-3 px-6">Business</th>
+                        <th scope="col" class="py-3 px-6">Lat/Lon</th>
+                        <th scope="col" class="py-3 px-6">Hours</th>
+                        <th scope="col" class="py-3 px-6">Status</th>
+                        <th scope="col" class="py-3 px-6">Fullness</th>
+                        <th scope="col" class="py-3 px-6">Total Boxes</th>
+                        <th scope="col" class="py-3 px-6">Full Boxes</th>
+                        <th scope="col" class="py-3 px-6">Empty Left</th>
+                        <th scope="col" class="py-3 px-6 rounded-tr-lg text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% lockers.forEach(function(locker) { %>
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <td class="py-4 px-6 font-medium text-gray-900 whitespace-nowrap dark:text-white"><%= locker.locker_id %></td>
+                        <td class="py-4 px-6">
+                            <a href="/locker/<%= locker.locker_id %>" class="text-blue-600 hover:underline font-semibold">
+                                <%= locker.name %>
+                            </a>
+                        </td>
+                        <td class="py-4 px-6"><%= locker.business_name %></td>
+                        <td class="py-4 px-6"><%= locker.latitude.toFixed(4) %>, <%= locker.longitude.toFixed(4) %></td>
+                        <td class="py-4 px-6"><%= locker.opening_hours %></td>
+                        <td class="py-4 px-6">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                <% if (locker.status === 'online') { %> bg-green-100 text-green-800
+                                <% } else if (locker.status === 'maintenance') { %> bg-yellow-100 text-yellow-800
+                                <% } else { %> bg-red-100 text-red-800 <% } %>">
+                                <%= locker.status.charAt(0).toUpperCase() + locker.status.slice(1) %>
+                            </span>
+                        </td>
+                        <td class="py-4 px-6"><%= locker.fullness.charAt(0).toUpperCase() + locker.fullness.slice(1) %></td>
+                        <td class="py-4 px-6"><%= locker.total_boxes %></td>
+                        <td class="py-4 px-6"><%= locker.full_boxes %></td>
+                        <td class="py-4 px-6"><%= locker.empty_boxes_left %></td>
+                        <td class="py-4 px-6 text-center">
+                            <a href="/edit_locker/<%= locker.locker_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-4">Edit</a>
+                            <form action="/delete_locker/<%= locker.locker_id %>" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this locker and all its boxes?');">
+                                <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+        <% } else { %>
+        <p class="text-center text-lg text-gray-600">No lockers found. Add some new lockers!</p>
+        <% } %>
+    </div>
+</body>
+</html>
+

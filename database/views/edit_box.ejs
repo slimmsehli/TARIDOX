@@ -1,0 +1,128 @@
+<!-- views/edit_box.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Box <%= box.box_id %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        input[type="text"], input[type="number"], select {
+            @apply shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5;
+        }
+        label {
+            @apply block mb-2 text-sm font-medium text-gray-900;
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Edit Box: <%= box.box_id %> in Locker <%= lockerId %></h1>
+            <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out transform hover:scale-105">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
+                Home
+            </a>
+        </div>
+
+        <form method="post" action="/locker/<%= lockerId %>/box/edit/<%= box.box_id %>" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="height">Height (cm):</label>
+                    <input type="number" step="any" id="height" name="height" value="<%= box.height %>" required>
+                </div>
+                <div>
+                    <label for="width">Width (cm):</label>
+                    <input type="number" step="any" id="width" name="width" value="<%= box.width %>" required>
+                </div>
+                <div>
+                    <label for="length">Length (cm):</label>
+                    <input type="number" step="any" id="length" name="length" value="<%= box.length %>" required>
+                </div>
+            </div>
+
+            <div>
+                <label for="volume">Volume (cm³):</label>
+                <input type="number" step="any" id="volume" name="volume" value="<%= box.volume %>" required>
+                <p class="text-xs text-gray-500 mt-1">Note: In a real system, volume might be auto-calculated from dimensions.</p>
+            </div>
+
+            <div>
+                <label for="status">Status:</label>
+                <select id="status" name="status" required>
+                    <option value="empty" <%= box.status === 'empty' ? 'selected' : '' %>>Empty</option>
+                    <option value="full" <%= box.status === 'full' ? 'selected' : '' %>>Full</option>
+                    <option value="reserved" <%= box.status === 'reserved' ? 'selected' : '' %>>Reserved</option>
+                    <option value="in use" <%= box.status === 'in use' ? 'selected' : '' %>>In Use</option>
+                    <option value="other" <%= box.status === 'other' ? 'selected' : '' %>>Other</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="ecommerce_name">E-commerce Name (Optional):</label>
+                <input type="text" id="ecommerce_name" name="ecommerce_name" value="<%= box.ecommerce_name || '' %>">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="occupied_from">Occupied From (YYYY-MM-DD HH:MM:SS):</label>
+                    <input type="text" id="occupied_from" name="occupied_from" value="<%= box.occupied_from || '' %>">
+                </div>
+                <div>
+                    <label for="occupied_to">Occupied To (YYYY-MM-DD HH:MM:SS):</label>
+                    <input type="text" id="occupied_to" name="occupied_to" value="<%= box.occupied_to || '' %>">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="code1_open">Code 1 (4 digits, Optional):</label>
+                    <input type="text" id="code1_open" name="code1_open" value="<%= box.code1_open || '' %>" maxlength="4">
+                </div>
+                <div>
+                    <label for="code2_open">Code 2 (4 digits, Optional):</label>
+                    <input type="text" id="code2_open" name="code2_open" value="<%= box.code2_open || '' %>" maxlength="4">
+                </div>
+            </div>
+
+            <div>
+                <label for="box_health">Box Health:</label>
+                <select id="box_health" name="box_health" required>
+                    <option value="working" <%= box.box_health === 'working' ? 'selected' : '' %>>Working</option>
+                    <option value="maintenance" <%= box.box_health === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+                    <option value="other" <%= box.box_health === 'other' ? 'selected' : '' %>>Other</option>
+                </select>
+            </div>
+
+            <%-- NEW FIELDS --%>
+            <div>
+                <label for="customer_name">Customer Name:</label>
+                <input type="text" id="customer_name" name="customer_name" value="<%= box.customer_name || '' %>">
+            </div>
+
+            <div>
+                <label for="customer_phone">Customer Phone:</label>
+                <input type="text" id="customer_phone" name="customer_phone" value="<%= box.customer_phone || '' %>">
+            </div>
+            <%-- END NEW FIELDS --%>
+
+
+            <div class="flex justify-between items-center mt-8">
+                <a href="/locker/<%= lockerId %>" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out">
+                    Back to Locker Details
+                </a>
+                <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out transform hover:scale-105">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
+

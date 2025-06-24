@@ -1,0 +1,11 @@
+
+
+
+###### database interaction
+#npm init -y 
+#npm install sqlite3
+#ln -s ../db/locker.db locker.db
+
+
+###### backend side for the 
+npm install express sqlite3 tailwindcss
