@@ -41,6 +41,61 @@ function getCurrentTimestamp() {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+/**
+ * Recalculates and updates a locker's aggregate box counts and fullness status.
+ * This function should be called after any operation that modifies locker_boxes (add, edit, delete, pickup).
+ * @param {number} lockerId - The ID of the locker to update.
+ * @param {sqlite3.Database} db - The database connection.
+ * @param {function} callback - Callback function (err) to indicate completion or error.
+ */
+function updateLockerAggregates(lockerId, db, callback) {
+    db.get('SELECT COUNT(*) as total, SUM(CASE WHEN status = "full" THEN 1 ELSE 0 END) as full, SUM(CASE WHEN status = "reserved" THEN 1 ELSE 0 END) as reserved, SUM(CASE WHEN status = "in use" THEN 1 ELSE 0 END) as in_use, SUM(CASE WHEN status = "empty" THEN 1 ELSE 0 END) as empty FROM locker_boxes WHERE locker_id = ?', [lockerId], (err, counts) => {
+        if (err) {
+            console.error(`Error recalculating box counts for locker ${lockerId}:`, err.message);
+            return callback(err);
+        }
+
+        const actualTotal = counts.total || 0;
+        const actualFull = counts.full || 0;
+        const actualReserved = counts.reserved || 0;
+        const actualInUse = counts.in_use || 0;
+        const actualEmpty = counts.empty || 0;
+
+        // Calculate total occupied boxes (full, reserved, in use)
+        const totalOccupied = actualFull + actualReserved + actualInUse;
+        const calculatedEmptyBoxesLeft = actualTotal - totalOccupied;
+
+        let fullnessStatus = 'empty';
+        if (actualTotal > 0) {
+            if (totalOccupied === actualTotal) {
+                fullnessStatus = 'full';
+            } else if (totalOccupied > 0) {
+                fullnessStatus = 'has some space';
+            }
+        }
+
+        const updateLockerSql = `
+            UPDATE lockers
+            SET
+                total_boxes = ?,
+                full_boxes = ?,
+                empty_boxes_left = ?,
+                fullness = ?
+            WHERE
+                locker_id = ?
+        `;
+        db.run(updateLockerSql, [actualTotal, actualFull, calculatedEmptyBoxesLeft, fullnessStatus, lockerId], function(updateErr) {
+            if (updateErr) {
+                console.error(`Error updating locker ${lockerId} aggregates:`, updateErr.message);
+                return callback(updateErr);
+            }
+            console.log(`Locker ${lockerId} aggregates updated: Total=${actualTotal}, Full=${actualFull}, Empty=${calculatedEmptyBoxesLeft}, Fullness=${fullnessStatus}`);
+            callback(null);
+        });
+    });
+}
+
+
 // Route to display all lockers
 app.get('/', (req, res) => {
     const currentDb = getDb(); // Get a new connection for this request
@@ -171,7 +226,16 @@ app.post('/add_locker', (req, res) => {
                                 currentDb.close();
                                 if (commitErr) console.error('Commit error after box inserts:', commitErr.message);
                                 console.log(`Locker with ID ${newLockerId} and ${numBoxes} boxes added.`);
-                                res.redirect('/');
+                                // After adding new boxes, ensure the locker's aggregate status is correct
+                                const tempDb = getDb(); // Get new connection for the aggregate update
+                                updateLockerAggregates(newLockerId, tempDb, (aggErr) => {
+                                    tempDb.close();
+                                    if (aggErr) {
+                                        console.error('Error updating locker aggregates after add locker:', aggErr.message);
+                                        // Decide how to handle: rollback more or just log? For now, redirect anyway.
+                                    }
+                                    res.redirect('/');
+                                });
                             });
                         }
                     }
@@ -350,11 +414,22 @@ app.post('/locker/:locker_id/box/edit/:box_id', (req, res) => {
                 });
                 return;
             }
-            currentDb.run('COMMIT;', (commitErr) => {
-                currentDb.close();
-                if (commitErr) console.error('Commit error after standard update:', commitErr.message);
-                console.log(`Box with ID ${box_id} updated.`);
-                res.redirect(`/locker/${locker_id}`);
+            // After successful box update, update parent locker aggregates
+            currentDb.run('COMMIT;', (commitErr) => { // Commit box changes first
+                if (commitErr) {
+                    currentDb.close();
+                    console.error('Commit error after box update:', commitErr.message);
+                    return res.status(500).send('Error committing box update.');
+                }
+                const tempDb = getDb(); // Get new connection for the aggregate update
+                updateLockerAggregates(locker_id, tempDb, (aggErr) => {
+                    tempDb.close(); // Close connection after update
+                    if (aggErr) {
+                        console.error('Error updating locker aggregates after box edit:', aggErr.message);
+                        // This error is logged but we still redirect, as the main box update succeeded.
+                    }
+                    res.redirect(`/locker/${locker_id}`); // Redirect back to the locker details page
+                });
             });
         });
     });
@@ -378,7 +453,7 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
             return res.status(404).send('Box not found for pickup action.');
         }
 
-        // Proceed only if the box is not already empty or in maintenance/offline state
+        // Prevent pickup if box is already empty or not in working health
         if (currentBoxState.status === 'empty' || currentBoxState.box_health !== 'working') {
              currentDb.close();
              return res.status(400).send('Box cannot be picked up if it is already empty or not in working health.');
@@ -441,8 +516,8 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
                         code1_open = NULL,
                         code2_open = NULL,
                         customer_name = NULL,
-                        customer_phone = NULL,
                         parcel_name = NULL,
+                        customer_phone = NULL,
                         box_health = 'working'
                     WHERE
                         box_id = ? AND locker_id = ?
@@ -456,11 +531,20 @@ app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
                         });
                         return;
                     }
-                    currentDb.run('COMMIT;', (commitErr) => {
-                        currentDb.close();
-                        if (commitErr) console.error('Commit error after pickup:', commitErr.message);
-                        console.log(`Box ${box_id} picked up and reset.`);
-                        res.redirect(`/locker/${locker_id}`); // Redirect back to the locker details page
+                    currentDb.run('COMMIT;', (commitErr) => { // Commit box reset first
+                        if (commitErr) {
+                            currentDb.close();
+                            console.error('Commit error after pickup reset:', commitErr.message);
+                            return res.status(500).send('Error committing pickup reset.');
+                        }
+                        const tempDb = getDb(); // Get new connection for the aggregate update
+                        updateLockerAggregates(locker_id, tempDb, (aggErr) => {
+                            tempDb.close(); // Close connection after update
+                            if (aggErr) {
+                                console.error('Error updating locker aggregates after pickup:', aggErr.message);
+                            }
+                            res.redirect(`/locker/${locker_id}`); // Redirect back to the locker details page
+                        });
                     });
                 });
             });
@@ -530,10 +614,14 @@ app.post('/edit_locker/:id', (req, res) => {
     }
 
     const newTotalBoxes = parseInt(total_boxes, 10);
-    const newFullBoxes = parseInt(full_boxes, 10);
-    const newEmptyBoxesLeft = parseInt(empty_boxes_left, 10);
+    // Note: We will recalculate full_boxes and empty_boxes_left from actual data,
+    // so we don't strictly use the form's full_boxes/empty_boxes_left for DB update here.
+    // However, they are still validated for input type.
+    const formFullBoxes = parseInt(full_boxes, 10);
+    const formEmptyBoxesLeft = parseInt(empty_boxes_left, 10);
 
-    if (isNaN(newTotalBoxes) || newTotalBoxes < 0 || isNaN(newFullBoxes) || newFullBoxes < 0 || isNaN(newEmptyBoxesLeft) || newEmptyBoxesLeft < 0) {
+
+    if (isNaN(newTotalBoxes) || newTotalBoxes < 0 || isNaN(formFullBoxes) || formFullBoxes < 0 || isNaN(formEmptyBoxesLeft) || formEmptyBoxesLeft < 0) {
         return res.status(400).send('Box counts must be non-negative numbers.');
     }
 
@@ -566,7 +654,7 @@ app.post('/edit_locker/:id', (req, res) => {
             if (newTotalBoxes < occupiedBoxCount) {
                 currentDb.run('ROLLBACK;', () => {
                     currentDb.close();
-                    res.status(400).send(`Cannot reduce total boxes to ${newTotalBoxes}. There are currently ${occupiedBoxCount} occupied boxes.`);
+                    res.status(400).send(`Cannot reduce total boxes to ${newTotalBoxes}. There are currently ${occupiedBoxCount} occupied boxes. Please clear or move parcels first.`);
                 });
                 return;
             }
@@ -615,7 +703,7 @@ app.post('/edit_locker/:id', (req, res) => {
 
             // Delete boxes if needed
             if (boxesToDelete > 0) {
-                // Fetch empty boxes to prioritize deletion
+                // Fetch empty boxes to prioritize deletion (order by box_id DESC to remove newer ones first)
                 currentDb.all('SELECT box_id FROM locker_boxes WHERE locker_id = ? AND status = "empty" ORDER BY box_id DESC', [lockerId], (err, emptyBoxesToDelete) => {
                     if (err) {
                         currentDb.run('ROLLBACK;', () => {
@@ -645,68 +733,56 @@ app.post('/edit_locker/:id', (req, res) => {
                         }
                     }
 
-                    // If we still need to delete boxes after deleting all empty ones (shouldn't happen with the `occupiedBoxCount` check, but as a safeguard)
-                    // This scenario implies we'd need to delete occupied boxes, which we are preventing.
+                    // If we couldn't delete enough empty boxes, it means occupied boxes exist beyond the new total
                     if (deletedCount < boxesToDelete) {
-                        currentDb.run('ROLLBACK;', () => {
-                            currentDb.close();
-                            res.status(400).send(`Cannot delete enough empty boxes. Some occupied boxes would need to be removed. Please empty boxes first.`);
-                        });
-                        return;
+                         currentDb.run('ROLLBACK;', () => {
+                             currentDb.close();
+                             res.status(400).send(`Could not delete required number of empty boxes. There are still ${boxesToDelete - deletedCount} boxes that need to be cleared or moved before reducing total boxes further.`);
+                         });
+                         return;
                     }
 
-                    // Proceed with all pending promises (additions and deletions)
+                    // Once all deletions/additions are processed via promises, update locker aggregates
                     Promise.all(promises)
                         .then(() => {
-                            // After all box operations, fetch actual counts to update the locker record accurately
-                            currentDb.get('SELECT COUNT(*) as total, SUM(CASE WHEN status = "full" THEN 1 ELSE 0 END) as full, SUM(CASE WHEN status = "empty" THEN 1 ELSE 0 END) as empty FROM locker_boxes WHERE locker_id = ?', [lockerId], (countErr, counts) => {
-                                if (countErr) {
+                            // After all box structural changes, update the locker's metadata and aggregates
+                            const updateLockerMetaSql = `
+                                UPDATE lockers
+                                SET
+                                    name = ?,
+                                    business_name = ?,
+                                    latitude = ?,
+                                    longitude = ?,
+                                    opening_hours = ?,
+                                    status = ?
+                                WHERE
+                                    locker_id = ?
+                            `;
+                            currentDb.run(updateLockerMetaSql, [
+                                name, business_name, latitude, longitude, opening_hours, status, lockerId
+                            ], function(metaUpdateErr) {
+                                if (metaUpdateErr) {
                                     currentDb.run('ROLLBACK;', () => {
                                         currentDb.close();
-                                        console.error('Error recalculating box counts:', countErr.message);
-                                        res.status(500).send('Error updating locker: Could not recalculate box counts.');
+                                        console.error('Error updating locker metadata during edit:', metaUpdateErr.message);
+                                        res.status(500).send('Error updating locker metadata.');
                                     });
                                     return;
                                 }
-
-                                const actualTotal = counts.total || 0;
-                                const actualFull = counts.full || 0;
-                                const actualEmpty = counts.empty || 0;
-
-                                // Finally, update the locker's aggregate fields
-                                const updateLockerSql = `
-                                    UPDATE lockers
-                                    SET
-                                        name = ?,
-                                        business_name = ?,
-                                        latitude = ?,
-                                        longitude = ?,
-                                        opening_hours = ?,
-                                        status = ?,
-                                        fullness = ?,
-                                        total_boxes = ?,
-                                        full_boxes = ?,
-                                        empty_boxes_left = ?
-                                    WHERE
-                                        locker_id = ?
-                                `;
-                                currentDb.run(updateLockerSql, [
-                                    name, business_name, latitude, longitude, opening_hours, status, fullness,
-                                    actualTotal, actualFull, actualEmpty, // Use actual counts
-                                    lockerId
-                                ], function(updateErr) {
-                                    if (updateErr) {
+                                // Now, update aggregates based on the *actual* state of locker_boxes
+                                updateLockerAggregates(lockerId, currentDb, (aggErr) => {
+                                    if (aggErr) {
                                         currentDb.run('ROLLBACK;', () => {
                                             currentDb.close();
-                                            console.error('Error updating locker aggregate data:', updateErr.message);
-                                            res.status(500).send('Error updating locker in database.');
+                                            console.error('Error updating locker aggregates after structural changes:', aggErr.message);
+                                            res.status(500).send('Error updating locker status after box adjustments.');
                                         });
                                         return;
                                     }
                                     currentDb.run('COMMIT;', (commitErr) => {
                                         currentDb.close();
-                                        if (commitErr) console.error('Commit error after full locker update:', commitErr.message);
-                                        console.log(`Locker with ID ${lockerId} and its boxes updated.`);
+                                        if (commitErr) console.error('Commit error after full locker structural update:', commitErr.message);
+                                        console.log(`Locker with ID ${lockerId} and its boxes structurally updated and aggregates refreshed.`);
                                         res.redirect(`/locker/${lockerId}`); // Redirect to locker details page
                                     });
                                 });
@@ -715,15 +791,15 @@ app.post('/edit_locker/:id', (req, res) => {
                         .catch(promiseErr => {
                             currentDb.run('ROLLBACK;', () => {
                                 currentDb.close();
-                                console.error('Error during box creation/deletion:', promiseErr.message);
+                                console.error('Error during box creation/deletion in locker edit:', promiseErr.message);
                                 res.status(500).send('Error adjusting individual boxes during locker update.');
                             });
                         });
                 }); // End of currentDb.all for empty boxes
             } else {
-                 // If no boxes needed to be added or deleted, just update the locker's aggregate fields
-                 // (These might have been changed manually, even if total_boxes didn't change)
-                 const updateLockerSql = `
+                 // If no boxes needed to be added or deleted (total_boxes didn't change)
+                 // Just update the locker's metadata and then its aggregates
+                 const updateLockerMetaSql = `
                      UPDATE lockers
                      SET
                          name = ?,
@@ -731,231 +807,44 @@ app.post('/edit_locker/:id', (req, res) => {
                          latitude = ?,
                          longitude = ?,
                          opening_hours = ?,
-                         status = ?,
-                         fullness = ?,
-                         total_boxes = ?,
-                         full_boxes = ?,
-                         empty_boxes_left = ?
+                         status = ?
                      WHERE
                          locker_id = ?
                  `;
-                 currentDb.run(updateLockerSql, [
-                     name, business_name, latitude, longitude, opening_hours, status, fullness,
-                     newTotalBoxes, newFullBoxes, newEmptyBoxesLeft, // Use values directly from form if no box structural changes
-                     lockerId
-                 ], function(updateErr) {
-                     if (updateErr) {
+                 currentDb.run(updateLockerMetaSql, [
+                     name, business_name, latitude, longitude, opening_hours, status, lockerId
+                 ], function(metaUpdateErr) {
+                     if (metaUpdateErr) {
                          currentDb.run('ROLLBACK;', () => {
                              currentDb.close();
-                             console.error('Error updating locker aggregate data (no box changes):', updateErr.message);
-                             res.status(500).send('Error updating locker in database.');
+                             console.error('Error updating locker metadata during edit (no structural changes):', metaUpdateErr.message);
+                             res.status(500).send('Error updating locker metadata.');
                          });
                          return;
                      }
-                     currentDb.run('COMMIT;', (commitErr) => {
-                         currentDb.close();
-                         if (commitErr) console.error('Commit error after simple locker update:', commitErr.message);
-                         console.log(`Locker with ID ${lockerId} updated (no box structural changes).`);
-                         res.redirect(`/locker/${lockerId}`);
+                     // Now, update aggregates based on the *actual* state of locker_boxes
+                     updateLockerAggregates(lockerId, currentDb, (aggErr) => {
+                         if (aggErr) {
+                             currentDb.run('ROLLBACK;', () => {
+                                 currentDb.close();
+                                 console.error('Error updating locker aggregates after metadata changes:', aggErr.message);
+                                 res.status(500).send('Error updating locker status after metadata changes.');
+                             });
+                             return;
+                         }
+                         currentDb.run('COMMIT;', (commitErr) => {
+                             currentDb.close();
+                             if (commitErr) console.error('Commit error after simple locker update:', commitErr.message);
+                             console.log(`Locker with ID ${lockerId} updated (no structural changes, aggregates refreshed).`);
+                             res.redirect(`/locker/${lockerId}`);
+                         });
                      });
                  });
             }
-        }); // End of currentDb.all for existing boxes
+        }); // End of currentDb.all for existing boxes (start of serialize block)
     }); // End of currentDb.serialize
 });
 
-
-// NEW ROUTE (POST): Handle 'Picked' action for a box
-app.post('/locker/:locker_id/box/pickup/:box_id', (req, res) => {
-    const { locker_id, box_id } = req.params;
-    const currentDb = getDb();
-
-    // 1. Get the current state of the box
-    currentDb.get('SELECT * FROM locker_boxes WHERE box_id = ? AND locker_id = ?', [box_id, locker_id], (err, currentBoxState) => {
-        if (err) {
-            currentDb.close();
-            console.error('Error fetching current box state for pickup:', err.message);
-            return res.status(500).send('Error processing pickup action.');
-        }
-        if (!currentBoxState) {
-            currentDb.close();
-            return res.status(404).send('Box not found for pickup action.');
-        }
-
-        // Proceed only if the box is not already empty or in maintenance/offline state
-        if (currentBoxState.status === 'empty' || currentBoxState.box_health !== 'working') {
-             currentDb.close();
-             return res.status(400).send('Box cannot be picked up if it is already empty or not in working health.');
-        }
-
-        currentDb.serialize(() => {
-            currentDb.run('BEGIN TRANSACTION;', (txErr) => {
-                if (txErr) {
-                    currentDb.close();
-                    console.error('Error starting transaction for pickup:', txErr.message);
-                    return res.status(500).send('Error processing pickup (transaction failed).');
-                }
-            });
-
-            // 2. Log to history (preserving the state BEFORE it becomes empty)
-            const historySql = `
-                INSERT INTO box_history (
-                    box_id, locker_id, height, width, length, volume, status,
-                    ecommerce_name, occupied_from, occupied_to, code1_open, code2_open, box_health,
-                    customer_name, customer_phone, parcel_name, history_timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            currentDb.run(historySql, [
-                currentBoxState.box_id,
-                currentBoxState.locker_id,
-                currentBoxState.height,
-                currentBoxState.width,
-                currentBoxState.length,
-                currentBoxState.volume,
-                currentBoxState.status, // Log the status BEFORE reset (e.g., 'full', 'reserved', 'in use')
-                currentBoxState.ecommerce_name,
-                currentBoxState.occupied_from,  // Occupied from date at pickup
-                currentBoxState.occupied_to,    // Occupied to date at pickup
-                currentBoxState.code1_open,
-                currentBoxState.code2_open,
-                currentBoxState.box_health,
-                currentBoxState.customer_name,
-                currentBoxState.customer_phone,
-                currentBoxState.parcel_name,    // parcel_name at pickup
-                getCurrentTimestamp()
-            ], (historyErr) => {
-                if (historyErr) {
-                    currentDb.run('ROLLBACK;', () => {
-                        currentDb.close();
-                        console.error('Error logging pickup history:', historyErr.message);
-                        res.status(500).send('Error logging pickup history.');
-                    });
-                    return;
-                }
-
-                // 3. Reset the main box record to an empty state
-                const resetSql = `
-                    UPDATE locker_boxes
-                    SET
-                        status = 'empty',
-                        ecommerce_name = NULL,
-                        occupied_from = NULL,
-                        occupied_to = NULL,
-                        code1_open = NULL,
-                        code2_open = NULL,
-                        customer_name = NULL,
-                        parcel_name = NULL,
-                        customer_phone = NULL,
-                        box_health = 'working'
-                    WHERE
-                        box_id = ? AND locker_id = ?
-                `;
-                currentDb.run(resetSql, [box_id, locker_id], (resetErr) => {
-                    if (resetErr) {
-                        currentDb.run('ROLLBACK;', () => {
-                            currentDb.close();
-                            console.error('Error resetting box:', resetErr.message);
-                            res.status(500).send('Error resetting box status.');
-                        });
-                        return;
-                    }
-
-                    // After box is reset, update the locker's aggregate counts
-                    currentDb.get('SELECT COUNT(*) as total, SUM(CASE WHEN status = "full" THEN 1 ELSE 0 END) as full, SUM(CASE WHEN status = "empty" THEN 1 ELSE 0 END) as empty FROM locker_boxes WHERE locker_id = ?', [locker_id], (countErr, counts) => {
-                        if (countErr) {
-                            currentDb.run('ROLLBACK;', () => {
-                                currentDb.close();
-                                console.error('Error recalculating locker counts after pickup:', countErr.message);
-                                res.status(500).send('Error updating locker counts after pickup.');
-                            });
-                            return;
-                        }
-
-                        const actualTotal = counts.total || 0;
-                        const actualFull = counts.full || 0;
-                        const actualEmpty = counts.empty || 0;
-
-                        const updateLockerAggregatesSql = `
-                            UPDATE lockers
-                            SET
-                                full_boxes = ?,
-                                empty_boxes_left = ?
-                            WHERE
-                                locker_id = ?
-                        `;
-                        currentDb.run(updateLockerAggregatesSql, [actualFull, actualEmpty, locker_id], (updateLockerErr) => {
-                            if (updateLockerErr) {
-                                currentDb.run('ROLLBACK;', () => {
-                                    currentDb.close();
-                                    console.error('Error updating locker aggregates after pickup:', updateLockerErr.message);
-                                    res.status(500).send('Error updating locker aggregates after pickup.');
-                                });
-                                return;
-                            }
-                            currentDb.run('COMMIT;', (commitErr) => {
-                                currentDb.close();
-                                if (commitErr) console.error('Commit error after pickup and locker update:', commitErr.message);
-                                console.log(`Box ${box_id} picked up, reset, and locker aggregates updated.`);
-                                res.redirect(`/locker/${locker_id}`); // Redirect back to the locker details page
-                            });
-                        });
-                    });
-                });
-            });
-        });
-    });
-});
-
-
-// ROUTE: Display history for a specific box
-app.get('/box_history/:box_id', (req, res) => {
-    const boxId = req.params.box_id;
-    const currentDb = getDb();
-
-    Promise.all([
-        new Promise((resolve, reject) => {
-            currentDb.all('SELECT * FROM box_history WHERE box_id = ? ORDER BY history_timestamp DESC', [boxId], (err, historyEntries) => {
-                if (err) reject(err);
-                else resolve(historyEntries);
-            });
-        }),
-        new Promise((resolve, reject) => {
-            currentDb.get('SELECT * FROM locker_boxes WHERE box_id = ?', [boxId], (err, currentBox) => {
-                if (err) reject(err);
-                else resolve(currentBox);
-            });
-        })
-    ])
-    .then(([historyEntries, currentBox]) => {
-        currentDb.close();
-        res.render('box_history', { boxId: boxId, historyEntries: historyEntries, currentBox: currentBox, lockerId: currentBox ? currentBox.locker_id : null });
-    })
-    .catch(err => {
-        currentDb.close();
-        console.error('Error fetching box history or current box details:', err.message);
-        res.status(500).send('Error retrieving box history or details.');
-    });
-});
-
-
-// ROUTE (GET): Display form to edit a specific locker
-app.get('/edit_locker/:id', (req, res) => {
-    const lockerId = req.params.id;
-    const currentDb = getDb();
-
-    currentDb.get('SELECT * FROM lockers WHERE locker_id = ?', [lockerId], (err, locker) => {
-        currentDb.close();
-        if (err) {
-            console.error('Error fetching locker for edit:', err.message);
-            return res.status(500).send('Error retrieving locker data.');
-        }
-        if (!locker) {
-            return res.status(404).send('Locker not found.');
-        }
-        res.render('edit_locker', { locker: locker });
-    });
-});
 
 // Error handling for routes not found
 app.use((req, res) => {
