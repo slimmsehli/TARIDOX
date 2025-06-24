@@ -25,10 +25,16 @@
     <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-8">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-extrabold text-indigo-700">Edit Box: <%= box.box_id %> in Locker <%= lockerId %></h1>
-            <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out transform hover:scale-105">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
-                Home
-            </a>
+            <div class="flex items-center space-x-4">
+                <a href="/locker/<%= lockerId %>" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to Locker Details
+                </a>
+                <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out transform hover:scale-105">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-10v10a1 1 0 001 1h3M3 4l9 9 9-9"></path></svg>
+                    Home
+                </a>
+            </div>
         </div>
 
         <form method="post" action="/locker/<%= lockerId %>/box/edit/<%= box.box_id %>" class="space-y-6">
@@ -100,7 +106,6 @@
                 </select>
             </div>
 
-            <%-- NEW FIELDS --%>
             <div>
                 <label for="customer_name">Customer Name:</label>
                 <input type="text" id="customer_name" name="customer_name" value="<%= box.customer_name || '' %>">
@@ -110,13 +115,13 @@
                 <label for="customer_phone">Customer Phone:</label>
                 <input type="text" id="customer_phone" name="customer_phone" value="<%= box.customer_phone || '' %>">
             </div>
-            <%-- END NEW FIELDS --%>
 
+            <div>
+                <label for="parcel_name">Parcel Name (e.g., iPhone Case):</label>
+                <input type="text" id="parcel_name" name="parcel_name" value="<%= box.parcel_name || '' %>">
+            </div>
 
             <div class="flex justify-between items-center mt-8">
-                <a href="/locker/<%= lockerId %>" class="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out">
-                    Back to Locker Details
-                </a>
                 <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out transform hover:scale-105">
                     Save Changes
                 </button>

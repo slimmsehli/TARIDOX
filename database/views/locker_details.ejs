@@ -91,6 +91,7 @@
                         <th scope="col" class="py-3 px-6">Health</th>
                         <th scope="col" class="py-3 px-6">Customer Name</th>
                         <th scope="col" class="py-3 px-6">Customer Phone</th>
+                        <th scope="col" class="py-3 px-6">Parcel Name</th>
                         <th scope="col" class="py-3 px-6 rounded-tr-lg text-center">Actions</th>
                     </tr>
                 </thead>
@@ -125,9 +126,15 @@
                         </td>
                         <td class="py-4 px-6"><%= box.customer_name || 'N/A' %></td>
                         <td class="py-4 px-6"><%= box.customer_phone || 'N/A' %></td>
-                        <td class="py-4 px-6 text-center">
-                            <a href="/locker/<%= locker.locker_id %>/box/edit/<%= box.box_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">Edit</a>
-                            <!-- Add a 'Delete Box' link here later if needed -->
+                        <td class="py-4 px-6"><%= box.parcel_name || 'N/A' %></td>
+                        <td class="py-4 px-6 text-center whitespace-nowrap">
+                            <a href="/locker/<%= locker.locker_id %>/box/edit/<%= box.box_id %>" class="font-medium text-blue-600 dark:text-blue-500 hover:underline mr-2">Edit</a>
+                            <% if (box.status !== 'empty' && box.box_health === 'working') { %>
+                            <form action="/locker/<%= locker.locker_id %>/box/pickup/<%= box.box_id %>" method="post" class="inline" onsubmit="return confirm('Are you sure this parcel has been picked up? This will clear its data and log to history.');">
+                                <button type="submit" class="font-medium text-green-600 dark:text-green-500 hover:underline mr-2">Picked</button>
+                            </form>
+                            <% } %>
+                            <a href="/box_history/<%= box.box_id %>" class="font-medium text-purple-600 dark:text-purple-500 hover:underline">History</a>
                         </td>
                     </tr>
                     <% }); %>
