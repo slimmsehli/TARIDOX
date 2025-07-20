@@ -1,0 +1,44 @@
+# ~/.cshrc: Configuration file for tcsh / csh
+
+# Set history behavior
+set history = 1000
+set savehist = (2000 merge)
+set histfile = ~/.history
+set histdup = erase
+
+# Make terminal check window size
+if ($?prompt) then
+    eval `resize`
+endif
+
+# Prompt customization (Green user@host:blue-directory)
+set prompt="%{\033[01;32m%}%n@%m%{\033[00m%}:%{\033[01;34m%}%~%{\033[00m%} % "
+
+# Enable colored output for common commands
+alias ls 'ls --color=auto'
+alias ll 'ls -alF'
+alias la 'ls -A'
+alias l 'ls -CF'
+alias grep 'grep --color=auto'
+alias fgrep 'fgrep --color=auto'
+alias egrep 'egrep --color=auto'
+
+# Alert alias (notify-send on long command completion)
+alias alert 'notify-send --urgency=low -i `if ($status == 0) echo terminal else echo error` "`history | tail -1 | sed '\''s/^[ ]*[0-9]*[ ]*//'\''`"'
+
+# Source aliases if any exist
+if (-e ~/.bash_aliases) then
+    source ~/.bash_aliases
+endif
+
+# Load NVM (Node Version Manager)
+setenv NVM_DIR "$HOME/.nvm"
+if (-e "$NVM_DIR/nvm.sh") then
+    source "$NVM_DIR/nvm.sh"
+endif
+if (-e "$NVM_DIR/bash_completion") then
+    source "$NVM_DIR/bash_completion"
+endif
+
+# Update PATH
+setenv PATH "$HOME/.nvm:$PATH"
