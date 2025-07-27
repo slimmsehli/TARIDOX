@@ -1,0 +1,13 @@
+.
+├── db.js                 // (Existing) Handles database initialization and connection
+├── server.js             // Main Express app setup and route registration
+├── views/                // (Existing) EJS templates
+│   ├── index.ejs
+│   └── ...
+├── utils/                // Helper functions
+│   ├── timestamp.js
+│   └── lockerAggregates.js
+└── routes/               // Express route handlers
+    ├── admin.js          // Routes for the admin dashboard (e.g., /, /add_locker, /edit_locker)
+    ├── api.js            // API routes for client-side interactions (e.g., /api/lockers, /api/locker/:id/connect)
+    └── box.js            // Routes specifically for managing individual boxes (e.g., /locker/:id/box/edit/:box_id)
