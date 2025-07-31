@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker Selection</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Choose Your Locker</h1>
+            <p>Please select a locker for your delivery. For testing purposes, we assume a package of 10x10x10cm (1L volume).</p>
+        </header>
+
+        <div class="search-area">
+            <input type="text" id="locationSearch" placeholder="Search for an area or address...">
+            <button id="searchButton">Search</button>
+            <button id="useMyLocationButton">Use My Location</button>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="locker-list-container">
+            <h2>Available Lockers</h2>
+            <ul id="lockerList">
+                <li class="no-lockers-message">Loading lockers...</li>
+            </ul>
+        </div>
+
+        <footer style="text-align: center; padding: 20px; color: #555;">
+            <p>&copy; 2023 Your Locker System</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
