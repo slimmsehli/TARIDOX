@@ -1,0 +1,4 @@
+server/node_modules
+database/node_modules
+test/node_modules
+client/node_modules
