@@ -61,6 +61,13 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
     return distance;
 };
 
+
+// Add this route to your server.js
+app.get('/locker_selection', (req, res) => {
+    res.render('locker_selection');
+});
+
+
 app.get('/api/lockers_slim', (req, res) => {
     const { lat, lon, radius } = req.query;
     const currentDb = getDb();
