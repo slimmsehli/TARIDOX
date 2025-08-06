@@ -181,6 +181,28 @@
             padding: 20px;
             color: #666;
         }
+        
+        /* Custom message box styling */
+        #messageBox {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #messageBox.visible {
+            opacity: 1;
+        }
+        
     </style>
 </head>
 <body>
@@ -191,7 +213,14 @@
         </header>
 
         <div class="search-area">
-            <input type="text" id="locationSearch" placeholder="Search for an area or address...">
+            <input type="text" id="locationSearch" placeholder="Search for an area or address..." list="suggestions">
+            <datalist id="suggestions">
+                <option value="Grenoble, France">
+                <option value="Paris, France">
+                <option value="London, UK">
+                <option value="New York, USA">
+                <option value="Tokyo, Japan">
+            </datalist>
             <button id="searchButton">Search</button>
             <button id="useMyLocationButton">Use My Location</button>
         </div>
@@ -211,19 +240,31 @@
             <p>&copy; 2023 Your Locker System</p>
         </footer>
     </div>
+    
+    <!-- Custom message box element -->
+    <div id="messageBox"></div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- JavaScript from script.js ---
-        // Initialize the map and global variables
         let map;
         let markers = L.featureGroup();
+        const lockerMarkers = new Map();
         let currentLat = 45.1885;
         let currentLon = 5.7245;
         const DEFAULT_RADIUS = 10000;
+        let isProgrammaticMove = false;
 
-        // Function to initialize the Leaflet map
+        // Custom function to show a message box instead of alert()
+        function showMessage(message, duration = 3000) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.classList.add('visible');
+            setTimeout(() => {
+                messageBox.classList.remove('visible');
+            }, duration);
+        }
+
         function initializeMap(lat = currentLat, lon = currentLon) {
             console.log("Initializing map at:", [lat, lon]);
             if (map) {
@@ -236,9 +277,12 @@
             }).addTo(map);
 
             markers.addTo(map);
-
-            // Listen for map drag/zoom end to re-fetch lockers
             map.on('moveend', () => {
+                // If the move was programmatic (from a list item click), don't refetch lockers
+                if (isProgrammaticMove) {
+                    isProgrammaticMove = false; // Reset the flag
+                    return;
+                }
                 const center = map.getCenter();
                 currentLat = center.lat;
                 currentLon = center.lng;
@@ -247,7 +291,6 @@
             });
         }
 
-        // Function to fetch locker data from the API
         async function fetchLockers(latitude, longitude, radius = DEFAULT_RADIUS) {
             const url = `/api/lockers_slim?lat=${latitude}&lon=${longitude}&radius=${radius}`;
             console.log(`Fetching lockers from: ${url}`);
@@ -264,10 +307,10 @@
             }
         }
 
-        // Function to display lockers on the map and in the list
         async function displayLockers(latitude, longitude) {
             console.log("displayLockers: Function called with coords:", [latitude, longitude]);
             markers.clearLayers();
+            lockerMarkers.clear(); // Clear the map of markers
             const lockerListElement = document.getElementById('lockerList');
 
             if (!lockerListElement) {
@@ -281,7 +324,6 @@
                 const lockers = await fetchLockers(latitude, longitude);
                 console.log("displayLockers: API fetch successful. Found lockers:", lockers.length, "lockers.");
                 
-                // Add a visual cue for scrolling if there are more than 2 lockers
                 if (lockerListElement) {
                      lockerListElement.classList.toggle('has-scroll', lockers.length > 2);
                 }
@@ -293,21 +335,19 @@
 
                 lockerListElement.innerHTML = '';
                 
-                // Create list items and markers for each locker
                 lockers.forEach(locker => {
                     if (locker.latitude && locker.longitude) {
                         const marker = L.marker([locker.latitude, locker.longitude])
-                            .bindPopup(`<b>${locker.name}</b><br>${locker.address}<br>Empty Boxes: ${locker.empty_boxes_left}`)
+                            .bindPopup(`<b>${locker.name}</b><br>${locker.business_name}<br>Empty Boxes: ${locker.empty_boxes_left}`)
                             .on('click', () => {
-                                // Find the corresponding list item and expand it
                                 const listItem = document.getElementById(`locker-${locker.locker_id}`);
                                 if (listItem) {
-                                    // Scroll into view on map marker click
                                     listItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                                     expandOnlyThisLocker(listItem);
                                 }
                             });
                         markers.addLayer(marker);
+                        lockerMarkers.set(locker.locker_id, marker); // Store the marker
                     } else {
                         console.warn(`displayLockers: Locker ${locker.locker_id} (${locker.name}) missing coordinates, cannot display on map.`);
                     }
@@ -342,13 +382,17 @@
                     lockerListElement.appendChild(listItem);
                 });
                 
-                // Add event listeners for list item clicks and select buttons
                 const listItems = document.querySelectorAll('.locker-item');
                 listItems.forEach(item => {
                     item.addEventListener('click', (event) => {
-                        // Prevent the click on the button from bubbling up and collapsing the item
                         if (event.target.tagName.toLowerCase() !== 'button') {
-                             // Scroll into view on list item click
+                            const lockerId = parseInt(item.id.replace('locker-', ''), 10);
+                            const marker = lockerMarkers.get(lockerId);
+                            if (marker) {
+                                isProgrammaticMove = true; // Set the flag before moving the map
+                                map.flyTo(marker.getLatLng(), 15);
+                                marker.openPopup();
+                            }
                             item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                             expandOnlyThisLocker(item);
                         }
@@ -369,7 +413,6 @@
             }
         }
         
-        // New function to collapse all lockers except the one clicked
         function expandOnlyThisLocker(targetListItem) {
             const allLockers = document.querySelectorAll('.locker-item');
             allLockers.forEach(item => {
@@ -377,7 +420,6 @@
                 const arrowIcon = item.querySelector('.arrow-icon');
                 
                 if (item === targetListItem) {
-                    // Toggle the clicked locker
                     const isExpanded = details.classList.contains('expanded');
                     if (isExpanded) {
                         details.classList.remove('expanded');
@@ -387,14 +429,12 @@
                         arrowIcon.textContent = '▼';
                     }
                 } else {
-                    // Collapse all other lockers
                     details.classList.remove('expanded');
                     arrowIcon.textContent = '▶';
                 }
             });
         }
         
-        // Function to handle the selection of a locker and notify the parent iframe
         function reserveLocker(lockerId) {
             console.log(`Locker ${lockerId} selected.`);
 
@@ -409,7 +449,6 @@
             console.log(`Locker ${lockerId} has been selected for delivery!`);
         }
 
-        // Function to convert an address string to geographic coordinates
         async function geocodeAddress(address) {
             console.log("Geocoding address:", address);
             const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
@@ -426,9 +465,12 @@
             }
         }
 
-        // Event listener for the search button
-        document.getElementById('searchButton').addEventListener('click', async () => {
-            const address = document.getElementById('locationSearch').value;
+        const locationSearchInput = document.getElementById('locationSearch');
+        const searchButton = document.getElementById('searchButton');
+        const useMyLocationButton = document.getElementById('useMyLocationButton');
+
+        async function performSearch() {
+             const address = locationSearchInput.value;
             if (address) {
                 const coords = await geocodeAddress(address);
                 if (coords) {
@@ -437,16 +479,28 @@
                     map.setView([currentLat, currentLon], 13);
                     displayLockers(currentLat, currentLon);
                 } else {
-                    console.log('Could not find location. Please try a different address.');
+                    showMessage('Could not find location. Please try a different address.');
                 }
             } else {
-                console.log('Please enter an address to search.');
+                showMessage('Please enter an address to search.');
+            }
+        }
+
+        searchButton.addEventListener('click', performSearch);
+        
+        // Add event listener for "Enter" key press on the search bar
+        locationSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent default form submission
+                performSearch();
             }
         });
 
-        // Event listener for the "Use My Location" button
-        document.getElementById('useMyLocationButton').addEventListener('click', () => {
+        useMyLocationButton.addEventListener('click', () => {
             console.log("Use My Location button clicked.");
+            useMyLocationButton.textContent = "Getting location...";
+            useMyLocationButton.disabled = true;
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -455,25 +509,29 @@
                         currentLon = position.coords.longitude;
                         map.setView([currentLat, currentLon], 13);
                         displayLockers(currentLat, currentLon);
+                        useMyLocationButton.textContent = "Use My Location";
+                        useMyLocationButton.disabled = false;
                     },
                     (error) => {
                         console.warn('Geolocation failed:', error);
-                        console.log(`Geolocation failed. Error Code: ${error.code}. Message: ${error.message}. Displaying default lockers.`);
+                        showMessage(`Geolocation failed. Error Code: ${error.code}. Message: ${error.message}. Displaying default lockers.`);
                         displayLockers(currentLat, currentLon);
+                        useMyLocationButton.textContent = "Use My Location";
+                        useMyLocationButton.disabled = false;
                     }
                 );
             } else {
-                console.log('Geolocation is not supported by your browser. Displaying default lockers.');
+                showMessage('Geolocation is not supported by your browser. Displaying default lockers.');
                 displayLockers(currentLat, currentLon);
+                useMyLocationButton.textContent = "Use My Location";
+                useMyLocationButton.disabled = false;
             }
         });
         
-        // Initial page load logic
         window.onload = () => {
             console.log("Window loaded. Starting initialization.");
-            initializeMap(); // Always initialize the map first
+            initializeMap();
 
-            // Then, try to get the user's location
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -485,13 +543,11 @@
                     },
                     (error) => {
                         console.warn('Initial geolocation failed:', error);
-                        // On failure, use the default map center
                         displayLockers(currentLat, currentLon);
                     }
                 );
             } else {
                 console.warn('Geolocation is not supported by this browser.');
-                // On no support, use the default map center
                 displayLockers(currentLat, currentLon);
             }
         };

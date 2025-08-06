@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taridox - Eco-Friendly Delivery Solutions</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Added Poppins for the hero text -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* Light Theme */
+        body.light {
+            background-color: #f0fdf4; /* Light green */
+            color: #1e2923; /* Dark green-gray */
+        }
+        .light .bg-primary { background-color: #dcfce7; } /* Lighter green */
+        .light .bg-secondary { background-color: #ecfdf5; } /* Off-white green */
+        .light .text-primary { color: #1e2923; }
+        .light .text-secondary { color: #4b5563; }
+        .light .border-primary { border-color: #a7f3d0; }
+        .light .logo-text { color: #1e2923; }
+        .light .accent-button { background-color: #16a34a; color: #fff; }
+        .light .accent-button:hover { background-color: #15803d; }
+        .light .contact-form-input { background-color: #ecfdf5; border-color: #a7f3d0; color: #1e2923; }
+        /* Light theme hover color for nav links */
+        .light .hover\:text-accent-green:hover { color: #15803d; }
+
+        /* Dark Theme */
+        body.dark {
+            background-color: #1e2923; /* Dark green-gray */
+            color: #c4d4c4; /* Light greenish-gray */
+        }
+        .dark .bg-primary { background-color: #2b3a32; }
+        .dark .bg-secondary { background-color: #3e4a42; }
+        .dark .text-primary { color: #c4d4c4; }
+        .dark .text-secondary { color: #9ca3af; }
+        .dark .border-primary { border-color: #334139; }
+        .dark .logo-text { color: #4ade80; }
+        .dark .accent-button { background-color: #4ade80; color: #111827; }
+        .dark .accent-button:hover { background-color: #22c55e; }
+        .dark .contact-form-input { background-color: #3e4a42; border-color: #334139; color: #c4d4c4; }
+        /* Dark theme hover color for nav links */
+        .dark .hover\:text-accent-green:hover { color: #22c55e; }
+
+
+        /* General Styles */
+        .hexagon-mask {
+            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        /* Image Carousel Animation */
+        .carousel-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+        }
+        .carousel-image-wrapper {
+            display: inline-block;
+            transition: transform 0.5s ease-in-out;
+            margin-right: 2rem; /* Add space between images */
+        }
+        
+        /* Hero text styles */
+        .hero-text {
+            font-family: 'Poppins', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* A subtle shadow for readability */
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Hide scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+    </style>
+</head>
+<body class="light">
+
+    <!-- Header & Theme Switcher -->
+    <header class="bg-primary shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <!-- Logo & Company Name -->
+            <div class="flex items-center space-x-3">
+                <!-- Logo placeholder -->
+                <img src="https://placehold.co/40x40/4ade80/000?text=Logo" alt="Taridox Logo" class="rounded-full">
+                <a href="#" class="text-3xl font-bold logo-text">Taridox</a>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="hidden md:flex items-center space-x-6 font-medium">
+                <!-- Added text-primary to give the links a base color -->
+                <a href="#who-we-are" class="text-primary hover:text-accent-green transition-colors">Who is Taridox?</a>
+                <a href="#our-clients" class="text-primary hover:text-accent-green transition-colors">Our Clients</a>
+                <a href="#contact-us" class="text-primary hover:text-accent-green transition-colors">Contact Us</a>
+            </nav>
+
+            <!-- Theme Switcher -->
+            <div class="flex items-center space-x-4">
+                <label for="theme-toggle" class="flex items-center cursor-pointer">
+                    <span class="mr-2 text-sm text-secondary">Dark Mode</span>
+                    <div class="relative">
+                        <input type="checkbox" id="theme-toggle" class="sr-only">
+                        <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform translate-x-0"></div>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Hero Section with Image Carousel -->
+    <section id="hero" class="relative overflow-hidden w-full h-screen flex items-center justify-center bg-primary border-b border-primary">
+        <div class="absolute inset-0 z-0">
+            <!-- Image Carousel Container -->
+            <div id="image-carousel-container" class="carousel-container h-full no-scrollbar">
+                <!-- Placeholder images. The JS will duplicate them for a seamless loop -->
+                <div class="carousel-image-wrapper h-full flex-shrink-0">
+                    <img src="/images/locker1.png" alt="Delivery image 1" class="h-full w-auto object-cover">
+                </div>
+                <div class="carousel-image-wrapper h-full flex-shrink-0">
+                    <img src="/images/locker2.png" alt="Delivery image 2" class="h-full w-auto object-cover">
+                </div>
+                <div class="carousel-image-wrapper h-full flex-shrink-0">
+                    <img src="/images/locker3.png" alt="Delivery image 3" class="h-full w-auto object-cover">
+                </div>
+                <div class="carousel-image-wrapper h-full flex-shrink-0">
+                    <img src="/images/locker4.jpg" alt="Delivery image 4" class="h-full w-auto object-cover">
+                </div>
+            </div>
+            <!-- Dark Overlay for better text readability -->
+            <div class="absolute inset-0 bg-black/50 z-10"></div>
+        </div>
+        <!-- Hero content overlay -->
+        <div class="relative z-20 text-center px-4">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-white hero-text">
+                Taridox: Your Eco-Friendly Delivery Partner
+            </h1>
+            <p class="mt-4 text-lg md:text-xl text-white hero-text font-medium">
+                Fast, reliable, and sustainable logistics solutions for a better tomorrow.
+            </p>
+        </div>
+    </section>
+
+    <!-- Who is Taridox? Section -->
+    <section id="who-we-are" class="py-20 bg-secondary border-b border-primary">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-12 text-primary">Who is Taridox?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                <div class="flex flex-col md:flex-row space-x-8 items-center">
+                    <!-- Left Hexagon Image -->
+                    <div class="w-64 h-64 flex-shrink-0 mb-8 md:mb-0">
+                        <img src="https://placehold.co/400x400/16a34a/fff?text=Our+Team" alt="Our team" class="w-full h-full object-cover hexagon-mask">
+                    </div>
+                    <!-- Text on the right -->
+                    <div class="text-secondary text-lg">
+                        <p class="mb-4">
+                            Taridox is a forward-thinking logistics company dedicated to providing efficient and environmentally conscious delivery services. Our mission is to redefine the standards of parcel delivery by integrating cutting-edge technology with sustainable practices.
+                        </p>
+                        <p>
+                            We believe that speed and reliability shouldn't come at the expense of the planet. Through optimized routes, a green fleet, and a commitment to waste reduction, we ensure your packages arrive on time and with a minimal carbon footprint.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row space-x-8 items-center">
+                    <!-- Right Hexagon Image -->
+                    <div class="w-64 h-64 flex-shrink-0 order-2 md:order-1 mb-8 md:mb-0">
+                        <img src="https://placehold.co/400x400/16a34a/fff?text=Our+Vision" alt="Our vision" class="w-full h-full object-cover hexagon-mask">
+                    </div>
+                    <!-- Text on the left -->
+                    <div class="text-secondary text-lg order-1 md:order-2">
+                        <p class="mb-4">
+                            Our vision is to build a global network of smart, green delivery solutions that empower businesses and delight customers. We are more than just a delivery service; we are a partner in your growth, offering personalized and transparent logistics management.
+                        </p>
+                        <p>
+                            With Taridox, you're choosing a partner that values innovation, integrity, and sustainability. We are proud to be at the forefront of the eco-logistics movement, paving the way for a more responsible future.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Clients Section -->
+    <section id="our-clients" class="py-20 bg-primary border-b border-primary">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-4xl font-bold mb-12 text-primary">Our Clients Trust Us</h2>
+            <p class="text-lg text-secondary max-w-2xl mx-auto mb-16">
+                We are proud to partner with some of the world's leading e-commerce businesses, providing them with the reliable and sustainable delivery solutions they need to thrive.
+            </p>
+            <!-- Client Logos -->
+            <div class="flex justify-center items-center flex-wrap gap-12 md:gap-20">
+                <img src="https://placehold.co/150x80/22c55e/fff?text=Client+A" alt="Client Logo A" class="h-20 w-auto">
+                <img src="https://placehold.co/150x80/22c55e/fff?text=Client+B" alt="Client Logo B" class="h-20 w-auto">
+                <img src="https://placehold.co/150x80/22c55e/fff?text=Client+C" alt="Client Logo C" class="h-20 w-auto">
+                <img src="https://placehold.co/150x80/22c55e/fff?text=Client+D" alt="Client Logo D" class="h-20 w-auto">
+                <img src="https://placehold.co/150x80/22c55e/fff?text=Client+E" alt="Client Logo E" class="h-20 w-auto">
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Us Section -->
+    <section id="contact-us" class="py-20 bg-secondary">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-16 text-primary">Contact Us</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <!-- Contact Info -->
+                <div class="bg-primary p-8 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold mb-4 text-primary">Get in Touch</h3>
+                    <p class="text-secondary mb-8">
+                        We'd love to hear from you. Whether you have a question about our services or need support, our team is ready to help.
+                    </p>
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-4">
+                            <i class="fa-solid fa-phone text-accent-green text-xl"></i>
+                            <a href="tel:+1234567890" class="text-secondary hover:underline">+1 (234) 567-890</a>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <i class="fa-solid fa-envelope text-accent-green text-xl"></i>
+                            <a href="mailto:info@taridox.com" class="text-secondary hover:underline">info@taridox.com</a>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex space-x-6">
+                        <a href="#" class="text-secondary hover:text-accent-green transition-colors"><i class="fa-brands fa-instagram text-2xl"></i></a>
+                        <a href="#" class="text-secondary hover:text-accent-green transition-colors"><i class="fa-brands fa-facebook-f text-2xl"></i></a>
+                        <a href="#" class="text-secondary hover:text-accent-green transition-colors"><i class="fa-brands fa-linkedin-in text-2xl"></i></a>
+                        <a href="mailto:info@taridox.com" class="text-secondary hover:text-accent-green transition-colors"><i class="fa-solid fa-envelope text-2xl"></i></a>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <div class="bg-primary p-8 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold mb-4 text-primary">Write to Us</h3>
+                    <form action="#" method="POST" class="space-y-4">
+                        <div>
+                            <input type="text" id="name" name="name" placeholder="Your Name" class="contact-form-input w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-accent-green transition-colors">
+                        </div>
+                        <div>
+                            <input type="email" id="email" name="email" placeholder="Your Email" class="contact-form-input w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-accent-green transition-colors">
+                        </div>
+                        <div>
+                            <input type="text" id="subject" name="subject" placeholder="Subject" class="contact-form-input w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-accent-green transition-colors">
+                        </div>
+                        <div>
+                            <textarea id="body" name="body" rows="5" placeholder="Your Message" class="contact-form-input w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-accent-green transition-colors"></textarea>
+                        </div>
+                        <button type="submit" class="accent-button w-full px-6 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors">
+                            <span>Send Message</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary py-8 text-center text-secondary text-sm">
+        <p>&copy; 2024 Taridox. All rights reserved.</p>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
+        const themeToggle = document.getElementById('theme-toggle');
+        const toggleDot = document.querySelector('.dot');
+
+        // Set initial theme based on localStorage or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        body.classList.add(savedTheme);
+        if (savedTheme === 'dark') {
+            themeToggle.checked = true;
+            toggleDot.style.transform = 'translateX(24px)';
+            document.querySelector('body').classList.add('dark');
+            document.querySelector('body').classList.remove('light');
+        } else {
+            themeToggle.checked = false;
+            toggleDot.style.transform = 'translateX(0)';
+            document.querySelector('body').classList.add('light');
+            document.querySelector('body').classList.remove('dark');
+        }
+
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                toggleDot.style.transform = 'translateX(24px)';
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                localStorage.setItem('theme', 'light');
+                toggleDot.style.transform = 'translateX(0)';
+            }
+        });
+
+        // ===================================
+        // New, fixed image carousel logic
+        // ===================================
+        const carouselContainer = document.getElementById('image-carousel-container');
+        const originalImages = carouselContainer.querySelectorAll('.carousel-image-wrapper');
+        
+        // Wait for images to load to get correct width
+        const imagesLoaded = [...originalImages].map(imgWrapper => new Promise(resolve => {
+            const img = imgWrapper.querySelector('img');
+            if (img.complete) {
+                resolve();
+            } else {
+                img.onload = resolve;
+                img.onerror = () => { console.error('Image failed to load:', img.src); resolve(); };
+            }
+        }));
+
+        Promise.all(imagesLoaded).then(() => {
+            let imageWidth = originalImages[0].offsetWidth; // Width of a single image wrapper
+            let animationFrameId;
+
+            // Duplicate images to create a seamless loop
+            originalImages.forEach(img => {
+                const clone = img.cloneNode(true);
+                carouselContainer.appendChild(clone);
+            });
+
+            const totalImages = carouselContainer.children.length;
+            carouselContainer.style.width = `${(imageWidth + 32) * totalImages}px`; // 32px for the gap
+            
+            let position = 0;
+            const scrollSpeed = 0.5; // pixels per frame
+
+            function animateCarousel() {
+                position -= scrollSpeed;
+                
+                // When the carousel has scrolled past the original set of images, reset its position
+                if (Math.abs(position) >= (imageWidth + 32) * originalImages.length) {
+                    position = 0;
+                }
+
+                carouselContainer.style.transform = `translateX(${position}px)`;
+                animationFrameId = requestAnimationFrame(animateCarousel);
+            }
+            
+            animateCarousel();
+        });
+    });
+    </script>
+</body>
+</html>
+

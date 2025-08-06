@@ -9,7 +9,10 @@ const PORT = 3000; // You can choose any available port
 
 // Set EJS as the templating engine
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', [ 
+	path.join(__dirname, 'views'),
+	path.join(__dirname, 'public')
+]);
 
 // Middleware to parse URL-encoded bodies (form data)
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -67,6 +70,10 @@ app.get('/locker_selection', (req, res) => {
     res.render('locker_selection');
 });
 
+// testpage for the main website
+app.get('/main', (req, res) => {
+    res.render('main/index', { pageTitle: 'Main Page' });
+});
 
 app.get('/api/lockers_slim', (req, res) => {
     const { lat, lon, radius } = req.query;
