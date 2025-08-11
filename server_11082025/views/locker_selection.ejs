@@ -1,0 +1,330 @@
+<!-- views/locker_selection.ejs -->
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker Selection</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        /* Define a consistent font and a full-page flexbox layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        
+        /* The main content area that will grow to fill available space */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column; /* Stacks map and list on small screens */
+            overflow: hidden; /* Ensures child elements don't cause overflow */
+        }
+        
+        /* The search bar and buttons area */
+        .search-area {
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        /* The map container section */
+        .map-container {
+            flex-grow: 1;
+            width: 100%;
+            height: 50vh; /* A good default height for mobile */
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* The locker list section */
+        .locker-list-container {
+            padding: 1rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+            max-height: 50vh; /* A good default height for mobile */
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* The styles for the collapsible locker details */
+        .locker-details {
+            padding: 0 15px;
+            background-color: #fefefe;
+            border-top: 1px solid #eee;
+            max-height: 0; /* Hides content by default */
+            overflow: hidden; /* Prevents overflow content from being visible */
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out; /* Smooth transition */
+        }
+        
+        .locker-details.expanded {
+            max-height: 1000px; /* Use a very large height to ensure all content fits */
+            padding: 15px; /* Adjust padding to make it visible */
+        }
+        
+        /* Responsive layout for medium and larger screens */
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row; /* Arranges map and list side-by-side */
+            }
+            .map-container {
+                flex-basis: 60%;
+                height: auto; /* Allow map to expand to container height */
+            }
+            .locker-list-container {
+                flex-basis: 40%;
+                max-height: 100%; /* Allow list to expand to container height */
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <!-- Header/Navigation Bar -->
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-gray-900">Taridox</a>
+            <ul class="hidden md:flex space-x-6">
+                <li><a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">Home</a></li>
+                <li><a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">Who we are</a></li>
+                <li><a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">Our products</a></li>
+                <li><a href="/locker_selection" class="text-blue-600 font-bold transition-colors">Our deployed lockers</a></li>
+                <li><a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">Contact us</a></li>
+            </ul>
+            <a href="/login" class="bg-blue-600 text-white px-6 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors">E-commerce Login</a>
+        </nav>
+    </header>
+
+    <!-- Main Content Area with Map and Locker List -->
+    <div class="main-content">
+        <div class="map-container">
+            <div id="map" class="rounded-lg shadow-md"></div>
+        </div>
+
+        <div class="locker-list-container bg-white rounded-lg shadow-md md:ml-4">
+            <div class="search-area">
+                <input type="text" id="locationSearch" placeholder="Search for an area or address..." class="flex-grow rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                <button id="searchButton" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-700 transition-colors">Search</button>
+                <button id="useMyLocationButton" class="bg-gray-400 text-white px-4 py-2 rounded-md shadow-md hover:bg-gray-500 transition-colors">Use My Location</button>
+            </div>
+            <h2 class="text-2xl font-bold mt-4 mb-2">Available Lockers</h2>
+            <ul id="lockerList" class="divide-y divide-gray-200">
+                <li class="no-lockers-message p-4 text-gray-500 italic">Loading lockers...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2024 Taridox Locker Solutions. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Leaflet and custom JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        let map;
+        let markers = L.featureGroup(); // To manage all locker markers
+        let currentLat = 45.1885; // Default to Grenoble, France
+        let currentLon = 5.7245; // Default to Grenoble, France
+        const DEFAULT_RADIUS = 10000; // 10 km default search radius
+
+        // Reference to HTML elements
+        const lockerListElement = document.getElementById('lockerList');
+        const locationSearchInput = document.getElementById('locationSearch');
+        const searchButton = document.getElementById('searchButton');
+        const useMyLocationButton = document.getElementById('useMyLocationButton');
+
+        // Helper function to show messages to the user
+        function showMessage(message) {
+            const messageContainer = document.querySelector('.no-lockers-message');
+            if (messageContainer) {
+                messageContainer.textContent = message;
+                messageContainer.classList.remove('hidden');
+            }
+        }
+
+        // Function to initialize the Leaflet map
+        function initializeMap(lat = currentLat, lon = currentLon) {
+            console.log("Initializing map at:", [lat, lon]);
+            if (map) {
+                map.remove(); // Remove existing map if any
+            }
+            map = L.map('map').setView([lat, lon], 13); // Set default view
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            markers.addTo(map); // Add the feature group to the map
+
+            // Listen for map drag/zoom end to re-fetch lockers in the visible area
+            map.on('moveend', () => {
+                const center = map.getCenter();
+                currentLat = center.lat;
+                currentLon = center.lng;
+                console.log("Map moved, fetching lockers near:", [currentLat, currentLon]);
+                displayLockers(currentLat, currentLon, DEFAULT_RADIUS);
+            });
+        }
+
+        // Function to fetch and display lockers from your API
+        function displayLockers(lat, lon, radius = DEFAULT_RADIUS) {
+            console.log(`Fetching lockers for location Lat: ${lat}, Lon: ${lon}, Radius: ${radius}`);
+            lockerListElement.innerHTML = '<li class="no-lockers-message p-4 text-gray-500 italic">Loading lockers...</li>';
+            markers.clearLayers();
+
+            fetch(`/api/lockers_slim?lat=${lat}&lon=${lon}&radius=${radius}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("API response:", data);
+                    lockerListElement.innerHTML = '';
+                    if (data.lockers && data.lockers.length > 0) {
+                        const lockerListHtml = data.lockers.map(locker => {
+                            const statusClass = locker.status === 'has some space' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                            const lockerItem = document.createElement('li');
+                            lockerItem.className = 'locker-item bg-gray-50 hover:bg-gray-100 p-4 mb-2 rounded-lg cursor-pointer transition-colors duration-200 shadow-sm';
+                            lockerItem.innerHTML = `
+                                <div class="locker-header flex justify-between items-center font-bold">
+                                    <span>Locker ${locker.locker_id}</span>
+                                    <span class="${statusClass} text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${locker.status}</span>
+                                </div>
+                                <div class="locker-details mt-2 text-gray-600 space-y-1">
+                                    <p><strong>Address:</strong> ${locker.address}</p>
+                                    <p><strong>Available Boxes:</strong> ${locker.empty_boxes_left}/${locker.total_boxes}</p>
+                                    <a href="/locker_selection" class="text-blue-500 hover:underline">Select Locker</a>
+                                </div>
+                            `;
+                            
+                            lockerItem.addEventListener('click', (event) => {
+                                // Prevent the link from triggering when clicking on the list item
+                                if (event.target.tagName.toLowerCase() !== 'a') {
+                                     const details = lockerItem.querySelector('.locker-details');
+                                     details.classList.toggle('expanded'); // Use 'expanded' class instead of 'hidden'
+                                }
+                            });
+
+                            // Add a marker to the map for this locker
+                            if (locker.latitude && locker.longitude) {
+                                const marker = L.marker([locker.latitude, locker.longitude]).bindPopup(`<b>Locker ${locker.locker_id}</b><br>${locker.address}`);
+                                markers.addLayer(marker);
+                            }
+                            
+                            return lockerItem.outerHTML;
+                        }).join('');
+                        
+                        lockerListElement.innerHTML = lockerListHtml;
+                    } else {
+                        lockerListElement.innerHTML = '<li class="no-lockers-message p-4 text-gray-500 italic">No lockers found in this area.</li>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching locker data:', error);
+                    lockerListElement.innerHTML = '<li class="no-lockers-message p-4 text-red-500 italic">Error loading lockers. Please try again later.</li>';
+                });
+        }
+
+
+        // Event listener for the search button
+        searchButton.addEventListener('click', () => {
+            const address = locationSearchInput.value;
+            if (address) {
+                // Use a geocoding service (like Nominatim) to convert address to coordinates
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const { lat, lon } = data[0];
+                            currentLat = parseFloat(lat);
+                            currentLon = parseFloat(lon);
+                            map.setView([currentLat, currentLon], 13);
+                            displayLockers(currentLat, currentLon);
+                        } else {
+                            showMessage('Address not found. Please try a different location.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Geocoding error:', error);
+                        showMessage('Error searching for address. Please try again.');
+                    });
+            }
+        });
+
+        // Event listener for the "Use My Location" button
+        useMyLocationButton.addEventListener('click', () => {
+            useMyLocationButton.textContent = "Locating...";
+            useMyLocationButton.disabled = true;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        map.setView([currentLat, currentLon], 13);
+                        displayLockers(currentLat, currentLon);
+                        useMyLocationButton.textContent = "Use My Location";
+                        useMyLocationButton.disabled = false;
+                    },
+                    (error) => {
+                        console.warn('Geolocation failed:', error);
+                        showMessage('Geolocation failed. Displaying default lockers.');
+                        displayLockers(currentLat, currentLon);
+                        useMyLocationButton.textContent = "Use My Location";
+                        useMyLocationButton.disabled = false;
+                    }
+                );
+            } else {
+                showMessage('Geolocation is not supported by your browser. Displaying default lockers.');
+                displayLockers(currentLat, currentLon);
+                useMyLocationButton.textContent = "Use My Location";
+                useMyLocationButton.disabled = false;
+            }
+        });
+
+        // Initial page load logic
+        window.onload = () => {
+            console.log("Window loaded. Starting initialization.");
+            initializeMap(); // Always initialize the map first
+
+            // Then, try to get the user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("Initial geolocation successful.");
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        map.setView([currentLat, currentLon], 13);
+                        displayLockers(currentLat, currentLon);
+                    },
+                    (error) => {
+                        console.warn('Initial geolocation failed:', error);
+                        // On failure, use the default map center
+                        displayLockers(currentLat, currentLon);
+                    }
+                );
+            } else {
+                console.warn('Geolocation is not supported by this browser.');
+                // On no support, use the default map center
+                displayLockers(currentLat, currentLon);
+            }
+        };
+    </script>
+</body>
+</html>
+

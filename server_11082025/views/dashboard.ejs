@@ -1,0 +1,169 @@
+<!-- views/dashboard.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8 min-h-screen">
+    <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 class="text-3xl font-bold text-gray-800">Welcome, <%= userName %>!</h1>
+            <div class="flex items-center gap-4">
+                <a href="/edit_profile" class="text-blue-500 hover:text-blue-700 font-medium">Edit Profile</a>
+                <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">Logout</a>
+            </div>
+        </div>
+
+        <% if (isAdmin) { %>
+            <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-4">Admin Dashboard</h2>
+            
+            <h3 class="text-xl font-medium text-gray-600 mb-2">E-commerces</h3>
+            <div class="overflow-x-auto shadow-md rounded-lg mb-8">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Is Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% ecommerces.forEach(e => { %>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= e.id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= e.name %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= e.email %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= e.api_key %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= e.is_admin ? 'Yes' : 'No' %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-medium text-gray-600 mb-2">Lockers</h3>
+            <div class="overflow-x-auto shadow-md rounded-lg mb-8">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Locker ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empty Boxes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% lockers.forEach(l => { %>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= l.locker_id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= l.name %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= l.location_description %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= l.status %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= l.empty_boxes_left %> / <%= l.total_boxes %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-medium text-gray-600 mb-2">Locker Boxes</h3>
+            <div class="overflow-x-auto shadow-md rounded-lg mb-8">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Box ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Locker ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% lockerBoxes.forEach(b => { %>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= b.box_id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= b.locker_id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= b.size %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= b.status %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-medium text-gray-600 mb-2">Parcels</h3>
+            <div class="overflow-x-auto shadow-md rounded-lg mb-8">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking #</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">E-commerce ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dest. Locker ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% parcels.forEach(p => { %>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= p.id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.tracking_number %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.status %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.ecommerce_id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.destination_locker_id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.size %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+        <% } else { %>
+            <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-4">Your Parcels</h2>
+            <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">API Key:</h3>
+                <p class="text-gray-600 font-mono text-sm break-all"><%= ecommerce.api_key %></p>
+                <p class="text-gray-500 mt-2 text-sm">Use this key for API requests.</p>
+            </div>
+            
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking Number</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination Locker ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% parcels.forEach(p => { %>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= p.id %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.tracking_number %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.status %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.destination_locker_id || 'N/A' %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= p.size %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</body>
+</html>
+

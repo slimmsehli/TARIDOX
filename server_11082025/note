@@ -1,0 +1,17 @@
+
+npm init -y
+npm install express better-sqlite3
+npm init -y
+npm install express ejs sqlite3
+
+sqlite3 ./db/taridox.db < schema.sql
+
+
+the main page for the company : test
+http://localhost:3000/main
+
+the page for checkout on the custoomers side that integrates the locker selection page/map 
+http://localhost:3000/locker_selection/checkout.html
+
+the standalone locker selection page 
+http://localhost:3000/locker_selection 

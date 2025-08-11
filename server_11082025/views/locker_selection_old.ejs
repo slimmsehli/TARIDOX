@@ -1,0 +1,557 @@
+<!-- views/locker_selection.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker Selection</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a202c;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .search-area {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .search-area input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+
+        .search-area button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .search-area button:hover {
+            background-color: #0056b3;
+        }
+
+        .map-container {
+            padding: 20px;
+            background-color: #e9e9e9;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 4px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        .locker-list-container {
+            padding: 20px;
+        }
+
+        .locker-list-container h2 {
+            margin-top: 0;
+            color: #4CAF50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        /* Styling for the scrollable list container */
+        #lockerList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 300px; /* Adjust this value to show more or less lockers */
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* Ellipsis visual cue for more items */
+        #lockerList:after {
+            content: '...';
+            display: block;
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .locker-item {
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 0; /* Remove bottom margin for continuous list */
+            border-radius: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+        
+        .locker-item:last-child {
+            border-bottom: none; /* No border for the last item */
+        }
+        
+        .locker-item:hover {
+            background-color: #eef;
+            border-color: #ccd;
+        }
+
+        .locker-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .locker-details {
+            padding: 0 15px;
+            background-color: #fefefe;
+            border-top: 1px solid #eee;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+
+        .locker-details.expanded {
+            max-height: 1000px;
+            padding: 15px;
+        }
+
+        .locker-details p {
+            margin: 5px 0;
+        }
+
+        .select-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .select-button:hover:not(:disabled) {
+            background-color: #218838;
+        }
+
+        .select-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .no-lockers-message {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        /* Custom message box styling */
+        #messageBox {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #messageBox.visible {
+            opacity: 1;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Choose Your Locker</h1>
+            <p>Please select a locker for your delivery. For testing purposes, we assume a package of 10x10x10cm (1L volume).</p>
+        </header>
+
+        <div class="search-area">
+            <input type="text" id="locationSearch" placeholder="Search for an area or address..." list="suggestions">
+            <datalist id="suggestions">
+                <option value="Grenoble, France">
+                <option value="Paris, France">
+                <option value="London, UK">
+                <option value="New York, USA">
+                <option value="Tokyo, Japan">
+            </datalist>
+            <button id="searchButton">Search</button>
+            <button id="useMyLocationButton">Use My Location</button>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="locker-list-container">
+            <h2>Available Lockers</h2>
+            <ul id="lockerList">
+                <li class="no-lockers-message">Loading lockers...</li>
+            </ul>
+        </div>
+
+        <footer style="text-align: center; padding: 20px; color: #555;">
+            <p>&copy; 2023 Your Locker System</p>
+        </footer>
+    </div>
+    
+    <!-- Custom message box element -->
+    <div id="messageBox"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let markers = L.featureGroup();
+        const lockerMarkers = new Map();
+        let currentLat = 45.1885;
+        let currentLon = 5.7245;
+        const DEFAULT_RADIUS = 10000;
+        let isProgrammaticMove = false;
+
+        // Custom function to show a message box instead of alert()
+        function showMessage(message, duration = 3000) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.classList.add('visible');
+            setTimeout(() => {
+                messageBox.classList.remove('visible');
+            }, duration);
+        }
+
+        function initializeMap(lat = currentLat, lon = currentLon) {
+            console.log("Initializing map at:", [lat, lon]);
+            if (map) {
+                map.remove();
+            }
+            map = L.map('map').setView([lat, lon], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            markers.addTo(map);
+            map.on('moveend', () => {
+                // If the move was programmatic (from a list item click), don't refetch lockers
+                if (isProgrammaticMove) {
+                    isProgrammaticMove = false; // Reset the flag
+                    return;
+                }
+                const center = map.getCenter();
+                currentLat = center.lat;
+                currentLon = center.lng;
+                console.log("Map moved, fetching lockers near:", [currentLat, currentLon]);
+                displayLockers(currentLat, currentLon, DEFAULT_RADIUS);
+            });
+        }
+
+        async function fetchLockers(latitude, longitude, radius = DEFAULT_RADIUS) {
+            const url = `/api/lockers_slim?lat=${latitude}&lon=${longitude}&radius=${radius}`;
+            console.log(`Fetching lockers from: ${url}`);
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.lockers;
+            } catch (error) {
+                console.error('Error fetching lockers from API:', error);
+                return [];
+            }
+        }
+
+        async function displayLockers(latitude, longitude) {
+            console.log("displayLockers: Function called with coords:", [latitude, longitude]);
+            markers.clearLayers();
+            lockerMarkers.clear(); // Clear the map of markers
+            const lockerListElement = document.getElementById('lockerList');
+
+            if (!lockerListElement) {
+                console.error("displayLockers: Locker list element with ID 'lockerList' not found in the DOM.");
+                return;
+            }
+
+            lockerListElement.innerHTML = '<li class="no-lockers-message">Searching for lockers...</li>';
+
+            try {
+                const lockers = await fetchLockers(latitude, longitude);
+                console.log("displayLockers: API fetch successful. Found lockers:", lockers.length, "lockers.");
+                
+                if (lockerListElement) {
+                     lockerListElement.classList.toggle('has-scroll', lockers.length > 2);
+                }
+
+                if (lockers.length === 0) {
+                    lockerListElement.innerHTML = '<li class="no-lockers-message">No lockers found in this area. Try searching a different location or zooming out.</li>';
+                    return;
+                }
+
+                lockerListElement.innerHTML = '';
+                
+                lockers.forEach(locker => {
+                    if (locker.latitude && locker.longitude) {
+                        const marker = L.marker([locker.latitude, locker.longitude])
+                            .bindPopup(`<b>${locker.name}</b><br>${locker.business_name}<br>Empty Boxes: ${locker.empty_boxes_left}`)
+                            .on('click', () => {
+                                const listItem = document.getElementById(`locker-${locker.locker_id}`);
+                                if (listItem) {
+                                    listItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    expandOnlyThisLocker(listItem);
+                                }
+                            });
+                        markers.addLayer(marker);
+                        lockerMarkers.set(locker.locker_id, marker); // Store the marker
+                    } else {
+                        console.warn(`displayLockers: Locker ${locker.locker_id} (${locker.name}) missing coordinates, cannot display on map.`);
+                    }
+
+                    const listItem = document.createElement('li');
+                    listItem.className = 'locker-item';
+                    listItem.id = `locker-${locker.locker_id}`;
+
+                    try {
+                        listItem.innerHTML = `
+                            <div class="locker-header">
+                                <span>${locker.name} - ${locker.business_name}</span>
+                                <i class="arrow-icon">▶</i>
+                            </div>
+                            <div class="locker-details">
+                                <p><strong>Status:</strong> ${locker.status}</p>
+                                <p><strong>Fullness:</strong> ${locker.fullness}</p>
+                                <p><strong>Empty Boxes Available:</strong> ${locker.empty_boxes_left}</p>
+                                <p><strong>Working Hours:</strong> ${locker.opening_hours || 'N/A'}</p>
+                                <p><strong>Business Info:</strong> ${locker.business_name || 'N/A'}</p>
+                                ${locker.status === 'online' && locker.empty_boxes_left > 0 ?
+                                    `<button class="select-button" data-locker-id="${locker.locker_id}">Select This Locker</button>` :
+                                    `<button class="select-button" disabled>Not Available</button>`
+                                }
+                            </div>
+                        `;
+                    } catch (htmlError) {
+                        console.error(`displayLockers: Error creating HTML for locker ${locker.locker_id}:`, htmlError);
+                        return;
+                    }
+                    
+                    lockerListElement.appendChild(listItem);
+                });
+                
+                const listItems = document.querySelectorAll('.locker-item');
+                listItems.forEach(item => {
+                    item.addEventListener('click', (event) => {
+                        if (event.target.tagName.toLowerCase() !== 'button') {
+                            const lockerId = parseInt(item.id.replace('locker-', ''), 10);
+                            const marker = lockerMarkers.get(lockerId);
+                            if (marker) {
+                                isProgrammaticMove = true; // Set the flag before moving the map
+                                map.flyTo(marker.getLatLng(), 15);
+                                marker.openPopup();
+                            }
+                            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            expandOnlyThisLocker(item);
+                        }
+                    });
+                    
+                    const selectButton = item.querySelector('.select-button');
+                    if (selectButton && !selectButton.disabled) {
+                        selectButton.addEventListener('click', (event) => {
+                            const lockerId = event.target.dataset.lockerId;
+                            reserveLocker(lockerId);
+                        });
+                    }
+                });
+                
+            } catch (error) {
+                console.error('displayLockers: Error fetching or displaying lockers:', error);
+                lockerListElement.innerHTML = '<li class="no-lockers-message" style="color: red;">Error loading lockers. Please try again.</li>';
+            }
+        }
+        
+        function expandOnlyThisLocker(targetListItem) {
+            const allLockers = document.querySelectorAll('.locker-item');
+            allLockers.forEach(item => {
+                const details = item.querySelector('.locker-details');
+                const arrowIcon = item.querySelector('.arrow-icon');
+                
+                if (item === targetListItem) {
+                    const isExpanded = details.classList.contains('expanded');
+                    if (isExpanded) {
+                        details.classList.remove('expanded');
+                        arrowIcon.textContent = '▶';
+                    } else {
+                        details.classList.add('expanded');
+                        arrowIcon.textContent = '▼';
+                    }
+                } else {
+                    details.classList.remove('expanded');
+                    arrowIcon.textContent = '▶';
+                }
+            });
+        }
+        
+        function reserveLocker(lockerId) {
+            console.log(`Locker ${lockerId} selected.`);
+
+            if (window.parent) {
+                window.parent.postMessage({
+                    type: 'lockerSelected',
+                    lockerId: lockerId
+                }, window.parent.origin);
+            } else {
+                console.log("No parent window found. Cannot send message.");
+            }
+            console.log(`Locker ${lockerId} has been selected for delivery!`);
+        }
+
+        async function geocodeAddress(address) {
+            console.log("Geocoding address:", address);
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                }
+                return null;
+            } catch (error) {
+                console.error('Error geocoding address:', error);
+                return null;
+            }
+        }
+
+        const locationSearchInput = document.getElementById('locationSearch');
+        const searchButton = document.getElementById('searchButton');
+        const useMyLocationButton = document.getElementById('useMyLocationButton');
+
+        async function performSearch() {
+             const address = locationSearchInput.value;
+            if (address) {
+                const coords = await geocodeAddress(address);
+                if (coords) {
+                    currentLat = coords.lat;
+                    currentLon = coords.lon;
+                    map.setView([currentLat, currentLon], 13);
+                    displayLockers(currentLat, currentLon);
+                } else {
+                    showMessage('Could not find location. Please try a different address.');
+                }
+            } else {
+                showMessage('Please enter an address to search.');
+            }
+        }
+
+        searchButton.addEventListener('click', performSearch);
+        
+        // Add event listener for "Enter" key press on the search bar
+        locationSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent default form submission
+                performSearch();
+            }
+        });
+
+        useMyLocationButton.addEventListener('click', () => {
+            console.log("Use My Location button clicked.");
+            useMyLocationButton.textContent = "Getting location...";
+            useMyLocationButton.disabled = true;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("Geolocation successful:", position);
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        map.setView([currentLat, currentLon], 13);
+                        displayLockers(currentLat, currentLon);
+                        useMyLocationButton.textContent = "Use My Location";
+                        useMyLocationButton.disabled = false;
+                    },
+                    (error) => {
+                        console.warn('Geolocation failed:', error);
+                        showMessage(`Geolocation failed. Error Code: ${error.code}. Message: ${error.message}. Displaying default lockers.`);
+                        displayLockers(currentLat, currentLon);
+                        useMyLocationButton.textContent = "Use My Location";
+                        useMyLocationButton.disabled = false;
+                    }
+                );
+            } else {
+                showMessage('Geolocation is not supported by your browser. Displaying default lockers.');
+                displayLockers(currentLat, currentLon);
+                useMyLocationButton.textContent = "Use My Location";
+                useMyLocationButton.disabled = false;
+            }
+        });
+        
+        window.onload = () => {
+            console.log("Window loaded. Starting initialization.");
+            initializeMap();
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("Initial geolocation successful.");
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        map.setView([currentLat, currentLon], 13);
+                        displayLockers(currentLat, currentLon);
+                    },
+                    (error) => {
+                        console.warn('Initial geolocation failed:', error);
+                        displayLockers(currentLat, currentLon);
+                    }
+                );
+            } else {
+                console.warn('Geolocation is not supported by this browser.');
+                displayLockers(currentLat, currentLon);
+            }
+        };
+    </script>
+</body>
+</html>
+
